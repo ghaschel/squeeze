@@ -1,4 +1,4 @@
-import { rename, stat, unlink, utimes } from "node:fs/promises";
+import { stat, unlink, utimes } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, parse } from "node:path";
 
@@ -119,7 +119,7 @@ async function optimizeSingleImage(
           originalSize: originalStats.size,
           optimizedSize: optimizedStats.size,
           savedBytes: Math.max(savedBytes, 0),
-          message: "no gain",
+          message: describeSkipReason(savedBytes, options.threshold),
           targetPath,
         };
       }
@@ -499,7 +499,7 @@ async function stripMetadata(filePath: string): Promise<void> {
   ]);
 }
 
-async function applyReplacement(params: {
+export async function applyReplacement(params: {
   sourcePath: string;
   originalPath: string;
   targetPath: string;
@@ -529,12 +529,7 @@ async function applyReplacement(params: {
     return;
   }
 
-  const destination = join(
-    dirname(originalPath),
-    `.squeezit-replace-${Date.now()}${extname(originalPath)}`
-  );
-  await rename(sourcePath, destination);
-  await rename(destination, originalPath);
+  await move(sourcePath, originalPath, { overwrite: true });
 
   if (keepTime) {
     await utimes(originalPath, originalAtime, originalMtime);
@@ -574,6 +569,34 @@ function skippedResult(
     savedBytes: 0,
     message,
   };
+}
+
+export function describeSkipReason(
+  savedBytes: number,
+  threshold: number
+): string {
+  if (savedBytes < 0) {
+    return `grew by ${formatByteCount(Math.abs(savedBytes))}`;
+  }
+
+  if (savedBytes === 0) {
+    return "no size change";
+  }
+
+  if (savedBytes < threshold) {
+    return `saved ${formatByteCount(savedBytes)} below threshold ${formatByteCount(threshold)}`;
+  }
+
+  return "no gain";
+}
+
+function formatByteCount(bytes: number): string {
+  if (bytes < 1024) {
+    return `${bytes}B`;
+  }
+
+  const kilobytes = bytes / 1024;
+  return `${kilobytes >= 10 ? kilobytes.toFixed(0) : kilobytes.toFixed(1)}KB`;
 }
 
 async function runWithConcurrency<T>(

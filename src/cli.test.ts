@@ -1,10 +1,19 @@
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import {
+  mkdir,
+  mkdtemp,
+  readFile,
+  rm,
+  stat,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { resolveCompressOptions, resolveInputs } from "./utils";
+import { logOptimizationResult } from "./utils/console";
+import { applyReplacement, describeSkipReason } from "./utils/optimizer";
 
 const createdDirectories: string[] = [];
 
@@ -97,6 +106,66 @@ describe("resolveInputs", () => {
     expect(matches.map((entry) => entry.displayPath)).toEqual([
       "images/top.png",
     ]);
+  });
+});
+
+describe("optimizer helpers", () => {
+  test("describes skipped files clearly", () => {
+    expect(describeSkipReason(0, 100)).toBe("no size change");
+    expect(describeSkipReason(-18, 100)).toBe("grew by 18B");
+    expect(describeSkipReason(64, 100)).toBe("saved 64B below threshold 100B");
+  });
+
+  test("replaces the original file from a staged optimized file", async () => {
+    const root = await createTempDirectory();
+    const originalPath = join(root, "social-preview.svg");
+    const sourcePath = join(root, "work", "optimized.svg");
+
+    await mkdir(join(root, "work"), { recursive: true });
+    await writeFile(originalPath, "before");
+    await writeFile(sourcePath, "after");
+
+    const originalStats = await stat(originalPath);
+
+    await applyReplacement({
+      sourcePath,
+      originalPath,
+      targetPath: originalPath,
+      keepTime: false,
+      originalAtime: originalStats.atime,
+      originalMtime: originalStats.mtime,
+    });
+
+    expect(await readFile(originalPath, "utf8")).toBe("after");
+    await expect(stat(sourcePath)).rejects.toThrow();
+  });
+});
+
+describe("console output", () => {
+  test("prints skipped reasons", () => {
+    const messages: string[] = [];
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      messages.push(args.join(" "));
+    };
+
+    try {
+      logOptimizationResult({
+        filePath: join(process.cwd(), "assets", "squeezit-wordmark.svg"),
+        label: "[SVG]",
+        status: "skipped",
+        originalSize: 446,
+        optimizedSize: 446,
+        savedBytes: 0,
+        message: "no size change",
+      });
+    } finally {
+      console.log = originalLog;
+    }
+
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toContain("squeezit-wordmark.svg");
+    expect(messages[0]).toContain("no size change");
   });
 });
 

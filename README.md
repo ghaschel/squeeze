@@ -19,7 +19,7 @@ It supports direct file paths, shell-style patterns like `*.png`, glob expressio
 ## Why Squeezit
 
 - Lossless-first workflow across common web and design formats
-- Friendly CLI output with clear summaries
+- Friendly CLI output with clear summaries, skips, and failures
 - Safe threshold-based replacement so tiny wins do not churn your files
 - Pattern matching that works with both regular shell parameters and glob expressions
 - Works well as a local cleanup tool before commits or releases
@@ -57,7 +57,7 @@ squeezit
 Preview changes without modifying files:
 
 ```bash
-squeezit -d -v
+squeezit -d
 ```
 
 Target only top-level PNGs:
@@ -106,7 +106,7 @@ squeezit [patterns...] [options]
 | `-k, --keep-time`         | Preserve original access and modification timestamps      | `false`                        |
 | `-c, --concurrency <n>`   | Set worker concurrency manually                           | CPU count, or `2` with `--max` |
 | `-I, --install-deps`      | Attempt to install missing system tools                   | `false`                        |
-| `-v, --verbose`           | Print skipped files and additional details                | `false`                        |
+| `-v, --verbose`           | Print additional diagnostic details                       | `false`                        |
 | `-t, --threshold <bytes>` | Minimum savings required before replacing a file          | `100`                          |
 | `-i, --in-place`          | Create temporary work artifacts next to the source files  | `false`                        |
 | `-V, --version`           | Print the current version                                 | n/a                            |

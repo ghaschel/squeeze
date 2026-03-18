@@ -31,7 +31,7 @@ export function registerCompressCommand(program: Command): Command {
       parsePositiveInteger
     )
     .option("-I, --install-deps", "Attempt to install missing system tools")
-    .option("-v, --verbose", "Print skipped files and extra details")
+    .option("-v, --verbose", "Print extra details")
     .option(
       "-t, --threshold <bytes>",
       "Minimum bytes saved before replacement",
@@ -75,10 +75,6 @@ async function runCompressCommand(
     );
 
     const summary = await optimizeImages(inputs, options, (result) => {
-      if (result.status === "skipped" && !options.verbose) {
-        return;
-      }
-
       logOptimizationResult(result);
     });
 
