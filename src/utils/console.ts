@@ -40,22 +40,25 @@ export function logOptimizationResult(result: OptimizationResult): void {
   );
 }
 
-export function printSummary(summary: Summary): void {
+export function printSummary(
+  summary: Summary,
+  options?: { dryRun?: boolean }
+): void {
   const durationSeconds = Math.round((Date.now() - summary.startedAt) / 1000);
+  const heading = options?.dryRun
+    ? `${chalk.yellow("[DRY RUN]")} ${chalk.bold("Summary")}`
+    : chalk.bold("Summary");
 
   console.log("");
-  console.log(chalk.bold("Summary"));
-  console.log(`Processed: ${chalk.white(summary.processed.toString())}`);
-  console.log(`Optimized: ${chalk.green(summary.optimized.toString())}`);
+  console.log(heading);
+  console.log(`- Processed: ${chalk.blue(summary.processed.toString())}`);
+  console.log(`- Optimized: ${chalk.green(summary.optimized.toString())}`);
+  console.log(`- Skipped: ${chalk.yellow(summary.skipped.toString())}`);
+  console.log(`- Failed: ${chalk.red(summary.failed.toString())}`);
+  console.log("");
   console.log(
-    `Dry-run matches: ${chalk.blue(summary.dryRunEligible.toString())}`
+    `${chalk.bold("Saved")}: ${chalk.green(`${formatBytes(summary.savedBytes)}`)} ${chalk.dim("in")} ${chalk.cyan(`${formatDuration(durationSeconds)}`)}`
   );
-  console.log(`Skipped: ${chalk.yellow(summary.skipped.toString())}`);
-  console.log(
-    `Failed: ${summary.failed > 0 ? chalk.red(summary.failed.toString()) : chalk.white("0")}`
-  );
-  console.log(`Saved: ${chalk.green(formatBytes(summary.savedBytes))}`);
-  console.log(`Duration: ${chalk.white(formatDuration(durationSeconds))}`);
 }
 
 export function formatBytes(bytes: number): string {

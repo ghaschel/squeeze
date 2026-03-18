@@ -12,7 +12,7 @@ import { join } from "node:path";
 import { afterEach, describe, expect, test } from "bun:test";
 
 import { resolveCompressOptions, resolveInputs } from "./utils";
-import { logOptimizationResult } from "./utils/console";
+import { logOptimizationResult, printSummary } from "./utils/console";
 import { applyReplacement, describeSkipReason } from "./utils/optimizer";
 
 const createdDirectories: string[] = [];
@@ -166,6 +166,40 @@ describe("console output", () => {
     expect(messages).toHaveLength(1);
     expect(messages[0]).toContain("squeezit-wordmark.svg");
     expect(messages[0]).toContain("no size change");
+  });
+
+  test("prints a sectorized dry-run summary", () => {
+    const messages: string[] = [];
+    const originalLog = console.log;
+    console.log = (...args: unknown[]) => {
+      messages.push(args.join(" "));
+    };
+
+    try {
+      printSummary(
+        {
+          processed: 4,
+          optimized: 1,
+          dryRunEligible: 3,
+          failed: 0,
+          skipped: 3,
+          savedBytes: 113,
+          startedAt: Date.now(),
+        },
+        { dryRun: true }
+      );
+    } finally {
+      console.log = originalLog;
+    }
+
+    expect(messages).toHaveLength(8);
+    expect(messages[1]).toContain("[DRY RUN]");
+    expect(messages[2]).toContain("- Processed:");
+    expect(messages[3]).toContain("- Optimized:");
+    expect(messages[4]).toContain("- Skipped:");
+    expect(messages[5]).toContain("- Failed:");
+    expect(messages[7]).toContain("Saved");
+    expect(messages[7]).toContain("113B");
   });
 });
 

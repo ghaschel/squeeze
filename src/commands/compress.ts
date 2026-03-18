@@ -68,17 +68,19 @@ async function runCompressCommand(
 
     await ensureDependencies(options, requiresDngLab(inputs, options.max));
 
+    console.log("");
     console.log(
       chalk.dim(
         `${options.dryRun ? "Dry run" : "Processing"} ${inputs.length} file${inputs.length === 1 ? "" : "s"} with concurrency ${options.concurrency}`
       )
     );
+    console.log("");
 
     const summary = await optimizeImages(inputs, options, (result) => {
       logOptimizationResult(result);
     });
 
-    printSummary(summary);
+    printSummary(summary, { dryRun: options.dryRun });
     process.exitCode = summary.failed > 0 ? 1 : 0;
   } catch (error) {
     console.error(
