@@ -123,24 +123,24 @@ squeezit [patterns...] [options]
 
 ### Options
 
-| Option                    | Description                                                     | Default                        |
-| ------------------------- | --------------------------------------------------------------- | ------------------------------ |
-| `-r, --recursive`         | Recurse into directories when scanning inputs                   | `false`                        |
-| `-m, --max`               | Use the heaviest lossless compression passes and strip metadata | `false`                        |
-| `-s, --strip-meta`        | Remove EXIF, IPTC, and XMP metadata during compression          | `false`                        |
-| `--exif`                  | Only strip EXIF/IPTC/XMP metadata without recompressing         | `false`                        |
-| `-d, --dry-run`           | Show what would change without writing files                    | `false`                        |
-| `-k, --keep-time`         | Preserve original access and modification timestamps            | `false`                        |
-| `-c, --concurrency <n>`   | Set worker concurrency manually                                 | CPU count, or `2` with `--max` |
-| `-I, --install-deps`      | Attempt to install missing system tools                         | `false`                        |
-| `-U, --update`            | Update `squeezit` to the latest published version               | `false`                        |
-| `--check-update`          | Check whether a newer published version exists                  | `false`                        |
-| `--pm <manager>`          | Override the package manager used for self-update               | auto-detected when possible    |
-| `-v, --verbose`           | Print additional diagnostic details                             | `false`                        |
-| `-t, --threshold <bytes>` | Minimum savings required before replacing a file                | `100`                          |
-| `-i, --in-place`          | Create temporary work artifacts next to the source files        | `false`                        |
-| `-V, --version`           | Print the current version                                       | n/a                            |
-| `-h, --help`              | Show CLI help                                                   | n/a                            |
+| Option                    | Description                                                                           | Default                        |
+| ------------------------- | ------------------------------------------------------------------------------------- | ------------------------------ |
+| `-r, --recursive`         | Recurse into directories when scanning inputs                                         | `false`                        |
+| `-m, --max`               | Use the heaviest lossless compression passes, strip metadata, and force threshold `0` | `false`                        |
+| `-s, --strip-meta`        | Remove EXIF, IPTC, and XMP metadata during compression                                | `false`                        |
+| `--exif`                  | Only strip EXIF/IPTC/XMP metadata without recompressing                               | `false`                        |
+| `-d, --dry-run`           | Show what would change without writing files                                          | `false`                        |
+| `-k, --keep-time`         | Preserve original access and modification timestamps                                  | `false`                        |
+| `-c, --concurrency <n>`   | Set worker concurrency manually                                                       | CPU count, or `2` with `--max` |
+| `-I, --install-deps`      | Attempt to install missing system tools                                               | `false`                        |
+| `-U, --update`            | Update `squeezit` to the latest published version                                     | `false`                        |
+| `--check-update`          | Check whether a newer published version exists                                        | `false`                        |
+| `--pm <manager>`          | Override the package manager used for self-update                                     | auto-detected when possible    |
+| `-v, --verbose`           | Print additional diagnostic details                                                   | `false`                        |
+| `-t, --threshold <bytes>` | Minimum savings required before replacing a file                                      | `100`                          |
+| `-i, --in-place`          | Create temporary work artifacts next to the source files                              | `false`                        |
+| `-V, --version`           | Print the current version                                                             | n/a                            |
+| `-h, --help`              | Show CLI help                                                                         | n/a                            |
 
 ### Examples
 
@@ -240,6 +240,7 @@ Notes:
 - If a lossless result is larger, the file is skipped and never replaced
 - `--exif` is metadata-only mode and does not run recompression pipelines
 - `--max` always strips metadata in addition to raising encoder effort across the supported recompression pipelines
+- `--max` forces the replacement threshold to `0`, so any positive lossless reduction is accepted
 - ICO support is focused on modernizing containers while preserving icon sizes, not preserving original legacy BMP-style encoding byte-for-byte
 - RAW files are special-case inputs and only convert to `.dng` in `--max` mode
 

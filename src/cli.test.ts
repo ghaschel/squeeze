@@ -45,6 +45,7 @@ describe("resolveCompressOptions", () => {
     expect(parsed.max).toBe(true);
     expect(parsed.stripMeta).toBe(true);
     expect(parsed.exifOnly).toBe(false);
+    expect(parsed.threshold).toBe(0);
     expect(parsed.concurrency).toBe(2);
     expect(parsed.recursive).toBe(false);
   });
