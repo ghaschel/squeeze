@@ -21,8 +21,12 @@ export function registerCompressCommand(program: Command): Command {
       "Files, directories, or unexpanded shell/glob patterns. If omitted, scans supported image extensions in the current directory."
     )
     .option("-r, --recursive", "Recurse into directories")
-    .option("-m, --max", "Enable slower, heavier compression passes")
+    .option(
+      "-m, --max",
+      "Enable the heaviest lossless compression passes and strip metadata"
+    )
     .option("-s, --strip-meta", "Remove EXIF/IPTC/XMP metadata")
+    .option("--exif", "Only strip EXIF/IPTC/XMP metadata without recompressing")
     .option("-d, --dry-run", "Report potential savings without modifying files")
     .option("-k, --keep-time", "Preserve original atime/mtime")
     .option(

@@ -43,8 +43,17 @@ describe("resolveCompressOptions", () => {
   test("defaults concurrency to two workers in max mode", () => {
     const parsed = resolveCompressOptions([], { max: true }, process.cwd());
     expect(parsed.max).toBe(true);
+    expect(parsed.stripMeta).toBe(true);
+    expect(parsed.exifOnly).toBe(false);
     expect(parsed.concurrency).toBe(2);
     expect(parsed.recursive).toBe(false);
+  });
+
+  test("treats --exif as metadata-only mode", () => {
+    const parsed = resolveCompressOptions([], { exif: true }, process.cwd());
+    expect(parsed.exifOnly).toBe(true);
+    expect(parsed.stripMeta).toBe(true);
+    expect(parsed.max).toBe(false);
   });
 
   test("keeps positional patterns", () => {
@@ -251,6 +260,22 @@ describe("dependency planning", () => {
     expect(binaries).toContain("cjxl");
     expect(binaries).toContain("icotool");
     expect(binaries).toContain("dnglab");
+  });
+
+  test("metadata-only mode only requires exiftool", () => {
+    const dependencies = collectRequiredDependencies(
+      [
+        {
+          absolutePath: join(process.cwd(), "image.png"),
+          displayPath: "image.png",
+        },
+      ],
+      resolveCompressOptions([], { exif: true }, process.cwd())
+    );
+
+    expect(dependencies.map((dependency) => dependency.binary)).toEqual([
+      "exiftool",
+    ]);
   });
 });
 

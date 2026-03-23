@@ -8,6 +8,8 @@ export function resolveCompressOptions(
   cwd: string
 ): CompressCommandOptions {
   const max = flags.max ?? false;
+  const exifOnly = flags.exif ?? false;
+  const stripMeta = max || exifOnly || (flags.stripMeta ?? false);
   const defaultConcurrency = max
     ? Math.min(cpus().length || 1, 2)
     : cpus().length || 1;
@@ -16,7 +18,8 @@ export function resolveCompressOptions(
     patterns,
     recursive: flags.recursive ?? false,
     max,
-    stripMeta: flags.stripMeta ?? false,
+    stripMeta,
+    exifOnly,
     dryRun: flags.dryRun ?? false,
     keepTime: flags.keepTime ?? false,
     concurrency: flags.concurrency ?? defaultConcurrency,

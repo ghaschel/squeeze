@@ -61,6 +61,12 @@ Preview changes without modifying files:
 squeezit -d
 ```
 
+Strip metadata only, without recompressing:
+
+```bash
+squeezit --exif
+```
+
 Target only top-level PNGs:
 
 ```bash
@@ -117,23 +123,24 @@ squeezit [patterns...] [options]
 
 ### Options
 
-| Option                    | Description                                               | Default                        |
-| ------------------------- | --------------------------------------------------------- | ------------------------------ |
-| `-r, --recursive`         | Recurse into directories when scanning inputs             | `false`                        |
-| `-m, --max`               | Enable slower, heavier compression passes where available | `false`                        |
-| `-s, --strip-meta`        | Remove EXIF, IPTC, and XMP metadata after optimization    | `false`                        |
-| `-d, --dry-run`           | Show what would change without writing files              | `false`                        |
-| `-k, --keep-time`         | Preserve original access and modification timestamps      | `false`                        |
-| `-c, --concurrency <n>`   | Set worker concurrency manually                           | CPU count, or `2` with `--max` |
-| `-I, --install-deps`      | Attempt to install missing system tools                   | `false`                        |
-| `-U, --update`            | Update `squeezit` to the latest published version         | `false`                        |
-| `--check-update`          | Check whether a newer published version exists            | `false`                        |
-| `--pm <manager>`          | Override the package manager used for self-update         | auto-detected when possible    |
-| `-v, --verbose`           | Print additional diagnostic details                       | `false`                        |
-| `-t, --threshold <bytes>` | Minimum savings required before replacing a file          | `100`                          |
-| `-i, --in-place`          | Create temporary work artifacts next to the source files  | `false`                        |
-| `-V, --version`           | Print the current version                                 | n/a                            |
-| `-h, --help`              | Show CLI help                                             | n/a                            |
+| Option                    | Description                                                     | Default                        |
+| ------------------------- | --------------------------------------------------------------- | ------------------------------ |
+| `-r, --recursive`         | Recurse into directories when scanning inputs                   | `false`                        |
+| `-m, --max`               | Use the heaviest lossless compression passes and strip metadata | `false`                        |
+| `-s, --strip-meta`        | Remove EXIF, IPTC, and XMP metadata during compression          | `false`                        |
+| `--exif`                  | Only strip EXIF/IPTC/XMP metadata without recompressing         | `false`                        |
+| `-d, --dry-run`           | Show what would change without writing files                    | `false`                        |
+| `-k, --keep-time`         | Preserve original access and modification timestamps            | `false`                        |
+| `-c, --concurrency <n>`   | Set worker concurrency manually                                 | CPU count, or `2` with `--max` |
+| `-I, --install-deps`      | Attempt to install missing system tools                         | `false`                        |
+| `-U, --update`            | Update `squeezit` to the latest published version               | `false`                        |
+| `--check-update`          | Check whether a newer published version exists                  | `false`                        |
+| `--pm <manager>`          | Override the package manager used for self-update               | auto-detected when possible    |
+| `-v, --verbose`           | Print additional diagnostic details                             | `false`                        |
+| `-t, --threshold <bytes>` | Minimum savings required before replacing a file                | `100`                          |
+| `-i, --in-place`          | Create temporary work artifacts next to the source files        | `false`                        |
+| `-V, --version`           | Print the current version                                       | n/a                            |
+| `-h, --help`              | Show CLI help                                                   | n/a                            |
 
 ### Examples
 
@@ -159,6 +166,12 @@ Use the heaviest compression strategy:
 
 ```bash
 squeezit -r "images/**/*" -m
+```
+
+Strip metadata only:
+
+```bash
+squeezit --exif "photos/**/*.{jpg,tiff,heic}"
 ```
 
 Preserve timestamps while stripping metadata:
@@ -208,23 +221,25 @@ Internally, compression behavior is determined with MIME detection where applica
 
 Squeezit currently supports these image format families:
 
-- `JPEG` (`.jpg`, `.jpeg`): optimized losslessly with `jpegtran` and `jpegrescan`
-- `PNG` (`.png`): compares multiple lossless PNG candidates and keeps the smallest result
+- `JPEG` (`.jpg`, `.jpeg`): fast lossless optimization by default, heavier passes in `--max`
+- `PNG` (`.png`): fast `oxipng` optimization by default, heavier candidate comparison in `--max`
 - `APNG` (`.apng`, animated PNG payloads): optimized losslessly with `oxipng`
-- `GIF` (`.gif`): optimized losslessly with `gifsicle`
-- `WebP` (`.webp`): optimized losslessly, including animated WebP handling
-- `SVG` (`.svg`): optimized with `svgo`
-- `TIFF` (`.tif`, `.tiff`): optimized with lossless ZIP compression
-- `HEIF / HEIC` (`.heif`, `.heic`): re-encoded in lossless mode
-- `AVIF` (`.avif`): re-encoded in lossless mode
+- `GIF` (`.gif`): fast lossless optimization by default, strongest `gifsicle` pass in `--max`
+- `WebP` (`.webp`): lossless re-encode, with heavier encoder settings in `--max`, including animated WebP handling
+- `SVG` (`.svg`): single-pass optimization by default, multipass in `--max`
+- `TIFF` (`.tif`, `.tiff`): lossless ZIP recompression, with a heavier ZIP preset in `--max`
+- `HEIF / HEIC` (`.heif`, `.heic`): lossless re-encode, with a slower encoder preset in `--max`
+- `AVIF` (`.avif`): lossless re-encode, with a slower encoder speed in `--max`
 - `BMP` (`.bmp`): recompressed with lossless ZIP compression
-- `JPEG XL` (`.jxl`): re-encoded losslessly with `cjxl`
+- `JPEG XL` (`.jxl`): lossless re-encode, with a faster default pass and heavier effort in `--max`
 - `ICO` (`.ico`): modernized by extracting embedded icon images, optimizing them, and rebuilding the icon container while preserving the available icon sizes
-- `RAW camera files` (`.cr2`, `.nef`, `.arw`, `.raf`, `.orf`, `.rw2`): metadata stripping in normal mode, optional RAW-to-DNG conversion in `--max` mode
+- `RAW camera files` (`.cr2`, `.nef`, `.arw`, `.raf`, `.orf`, `.rw2`): metadata stripping in `--exif` mode, optional RAW-to-DNG conversion in `--max` mode
 
 Notes:
 
 - If a lossless result is larger, the file is skipped and never replaced
+- `--exif` is metadata-only mode and does not run recompression pipelines
+- `--max` always strips metadata in addition to raising encoder effort across the supported recompression pipelines
 - ICO support is focused on modernizing containers while preserving icon sizes, not preserving original legacy BMP-style encoding byte-for-byte
 - RAW files are special-case inputs and only convert to `.dng` in `--max` mode
 

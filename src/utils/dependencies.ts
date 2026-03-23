@@ -206,6 +206,7 @@ const STRIP_METADATA_FORMATS = new Set([
   "heif",
   "avif",
   "bmp",
+  "jxl",
   "raw",
 ]);
 
@@ -266,6 +267,10 @@ export function collectRequiredDependencies(
     return options.installDeps
       ? Object.values(DEPENDENCY_CATALOG)
       : [DEPENDENCY_CATALOG.file];
+  }
+
+  if (options.exifOnly) {
+    return [DEPENDENCY_CATALOG.exiftool];
   }
 
   const required = new Set<DependencyName>(["file"]);

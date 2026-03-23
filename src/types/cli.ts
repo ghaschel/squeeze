@@ -2,6 +2,7 @@ export interface CompressCliFlags {
   recursive?: boolean;
   max?: boolean;
   stripMeta?: boolean;
+  exif?: boolean;
   dryRun?: boolean;
   keepTime?: boolean;
   concurrency?: number;
@@ -19,6 +20,7 @@ export interface CompressCommandOptions {
   recursive: boolean;
   max: boolean;
   stripMeta: boolean;
+  exifOnly: boolean;
   dryRun: boolean;
   keepTime: boolean;
   concurrency: number;
