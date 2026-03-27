@@ -2,7 +2,9 @@ import { readFile, writeFile } from "node:fs/promises";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
-import { ensureDir, pathExists } from "fs-extra";
+import fsExtra from "fs-extra";
+
+const { ensureDir, pathExists } = fsExtra;
 
 import type { InstallerConfig, PackageManager } from "../types";
 

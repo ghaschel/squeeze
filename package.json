@@ -1,25 +1,117 @@
 {
   "name": "squeezit",
   "version": "1.4.1",
-  "main": "./dist/index.js",
+  "license": "MIT",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "type": "module",
   "bin": {
-    "squeezit": "./dist/index.js",
-    "sqz": "./dist/index.js"
+    "squeezit": "./dist/cli.js",
+    "sqz": "./dist/cli.js"
+  },
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./gulp": {
+      "import": {
+        "types": "./dist/gulp.d.ts",
+        "default": "./dist/gulp.js"
+      },
+      "require": {
+        "types": "./dist/gulp.d.cts",
+        "default": "./dist/gulp.cjs"
+      }
+    },
+    "./grunt": {
+      "import": {
+        "types": "./dist/grunt.d.ts",
+        "default": "./dist/grunt.js"
+      },
+      "require": {
+        "types": "./dist/grunt.d.cts",
+        "default": "./dist/grunt.cjs"
+      }
+    },
+    "./webpack": {
+      "import": {
+        "types": "./dist/webpack.d.ts",
+        "default": "./dist/webpack.js"
+      },
+      "require": {
+        "types": "./dist/webpack.d.cts",
+        "default": "./dist/webpack.cjs"
+      }
+    },
+    "./rollup": {
+      "import": {
+        "types": "./dist/rollup.d.ts",
+        "default": "./dist/rollup.js"
+      },
+      "require": {
+        "types": "./dist/rollup.d.cts",
+        "default": "./dist/rollup.cjs"
+      }
+    },
+    "./vite": {
+      "import": {
+        "types": "./dist/vite.d.ts",
+        "default": "./dist/vite.js"
+      },
+      "require": {
+        "types": "./dist/vite.d.cts",
+        "default": "./dist/vite.cjs"
+      }
+    },
+    "./next": {
+      "import": {
+        "types": "./dist/next.d.ts",
+        "default": "./dist/next.js"
+      },
+      "require": {
+        "types": "./dist/next.d.cts",
+        "default": "./dist/next.cjs"
+      }
+    },
+    "./esbuild": {
+      "import": {
+        "types": "./dist/esbuild.d.ts",
+        "default": "./dist/esbuild.js"
+      },
+      "require": {
+        "types": "./dist/esbuild.d.cts",
+        "default": "./dist/esbuild.cjs"
+      }
+    },
+    "./package.json": "./package.json"
   },
   "files": [
     "assets",
+    "docs",
     "dist",
     "postinstall.mjs",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
-    "build": "rm -rf dist && bun build ./index.ts --outfile ./dist/index.js --target node",
+    "build": "rm -rf dist && tsup && bun build ./index.ts --outfile ./dist/cli.js --target node",
     "prepack": "bun run build",
     "postinstall": "node ./postinstall.mjs",
-    "test": "bun test",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
+    "check:exports": "publint",
+    "check:types": "HUSKY=0 npm_config_cache=.npm-cache attw --pack . --profile node16",
+    "fixture-values": "bun run scripts/fixture-values.ts",
     "release:initial": "git fetch --tags --force && $ bunx -- commit-and-tag-version --release-as v1.0.0",
     "release": "git fetch --tags --force && commit-and-tag-version",
     "push": "git push --follow-tags",
@@ -29,6 +121,8 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",
+    "@vitest/coverage-v8": "^4.0.7",
+    "@arethetypeswrong/cli": "^0.18.2",
     "@types/bun": "latest",
     "commit-and-tag-version": "^12.7.0",
     "cz-git": "^1.12.0",
@@ -40,10 +134,13 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
+    "publint": "^0.3.15",
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
-    "typescript-eslint": "^8.57.1"
+    "tsup": "^8.5.0",
+    "typescript-eslint": "^8.57.1",
+    "vitest": "^4.0.7"
   },
   "peerDependencies": {
     "typescript": "^5"

@@ -1,11 +1,18 @@
-import { readdir, readFile, stat, unlink, utimes } from "node:fs/promises";
+import {
+  readdir,
+  readFile,
+  stat,
+  unlink,
+  utimes,
+  writeFile,
+} from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { basename, dirname, extname, join, parse } from "node:path";
 
-import { copy, ensureDir, mkdtemp, move, pathExists, remove } from "fs-extra";
+import fsExtra from "fs-extra";
 
 import type {
-  CompressCommandOptions,
+  CoreOptimizationOptions,
   DetectedImage,
   OptimizationResult,
   ResolvedInput,
@@ -17,6 +24,8 @@ import {
   runCommand,
   writeCommandStdoutToFile,
 } from "./exec";
+
+const { copy, ensureDir, mkdtemp, move, pathExists, remove } = fsExtra;
 
 const RAW_EXTENSIONS = new Set([
   ".cr2",
@@ -77,11 +86,19 @@ interface IcoEntry {
   bitDepth?: number;
 }
 
+export interface BmpHeaderInfo {
+  dibHeaderSize: number;
+  bitsPerPixel: number;
+  compression: number;
+}
+
+const MAX_JXL_EFFORTS = [7, 9, 10, 11] as const;
+
 class SkippableOptimizationError extends Error {}
 
 export async function optimizeImages(
   inputs: ResolvedInput[],
-  options: CompressCommandOptions,
+  options: CoreOptimizationOptions,
   onResult?: (result: OptimizationResult) => void
 ): Promise<Summary> {
   const summary: Summary = {
@@ -118,10 +135,19 @@ export async function optimizeImages(
 
 async function optimizeSingleImage(
   input: ResolvedInput,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<OptimizationResult> {
   try {
     if (options.exifOnly) {
+      const detected = await detectImage(input.absolutePath);
+      if (!detected) {
+        return skippedResult(
+          input.absolutePath,
+          "[SKIP]",
+          "unsupported format"
+        );
+      }
+
       const originalStats = await stat(input.absolutePath);
       const workDir = await createWorkDirectory(
         input.absolutePath,
@@ -131,10 +157,40 @@ async function optimizeSingleImage(
       await copy(input.absolutePath, workingInputPath, { overwrite: true });
 
       try {
+        if (detected.format === "svg") {
+          return await stripSvgMetadataOnly(
+            input.absolutePath,
+            workingInputPath,
+            workDir,
+            originalStats,
+            input.outputPath ?? input.absolutePath,
+            input.preserveOriginal ?? false,
+            options
+          );
+        }
+
+        if (detected.format === "ico") {
+          return skippedResult(
+            input.absolutePath,
+            "[SKIP]",
+            "metadata-only writing is not supported for ICO"
+          );
+        }
+
+        if (detected.format === "bmp") {
+          return skippedResult(
+            input.absolutePath,
+            "[SKIP]",
+            "metadata-only writing is not supported for BMP"
+          );
+        }
+
         return await stripExifOnly(
           input.absolutePath,
           workingInputPath,
           originalStats,
+          input.outputPath ?? input.absolutePath,
+          input.preserveOriginal ?? false,
           options
         );
       } finally {
@@ -174,9 +230,27 @@ async function optimizeSingleImage(
 
       const optimizedStats = await stat(pipeline.outputPath);
       const savedBytes = originalStats.size - optimizedStats.size;
-      const targetPath = pipeline.targetPath ?? input.absolutePath;
+      const preserveOriginal = input.preserveOriginal ?? false;
+      const targetPath =
+        pipeline.targetPath && input.outputPath && preserveOriginal
+          ? join(dirname(input.outputPath), basename(pipeline.targetPath))
+          : (pipeline.targetPath ?? input.outputPath ?? input.absolutePath);
 
       if (optimizedStats.size >= originalStats.size - options.threshold) {
+        if (
+          !options.dryRun &&
+          preserveOriginal &&
+          targetPath !== input.absolutePath
+        ) {
+          await writeSkippedOutput({
+            sourcePath: input.absolutePath,
+            targetPath,
+            keepTime: options.keepTime,
+            originalAtime: originalStats.atime,
+            originalMtime: originalStats.mtime,
+          });
+        }
+
         return {
           filePath: input.absolutePath,
           label: pipeline.label,
@@ -205,6 +279,7 @@ async function optimizeSingleImage(
         sourcePath: pipeline.outputPath,
         originalPath: input.absolutePath,
         targetPath,
+        preserveOriginal,
         keepTime: options.keepTime,
         originalAtime: originalStats.atime,
         originalMtime: originalStats.mtime,
@@ -284,7 +359,7 @@ async function runPipeline(params: {
   originalPath: string;
   workingInputPath: string;
   workDir: string;
-  options: CompressCommandOptions;
+  options: CoreOptimizationOptions;
 }): Promise<PipelineResult> {
   const { detected, originalPath, workingInputPath, workDir, options } = params;
 
@@ -326,7 +401,7 @@ async function runPipeline(params: {
 async function optimizePng(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   return optimizePngLike(inputPath, workDir, options, false, "[PNG]");
 }
@@ -334,7 +409,7 @@ async function optimizePng(
 async function optimizeApng(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   return optimizePngLike(inputPath, workDir, options, true, "[APNG]");
 }
@@ -342,7 +417,7 @@ async function optimizeApng(
 async function optimizePngLike(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions,
+  options: CoreOptimizationOptions,
   animated: boolean,
   label: string
 ): Promise<PipelineResult> {
@@ -374,7 +449,7 @@ async function optimizePngLike(
 async function optimizePngLegacy(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<CandidateResult> {
   const crushedPath = join(workDir, "stage-1.png");
   const optipngOutput = join(
@@ -396,18 +471,8 @@ async function optimizePngLegacy(
     optipngOutput,
   ]);
 
-  if (!options.max) {
-    if (options.stripMeta) {
-      await stripMetadata(optipngOutput);
-    }
-    return { outputPath: optipngOutput };
-  }
-
   await runCheckedCommand("zopflipng", [
-    "--iterations=500",
-    "--filters=01234mepb",
-    optipngOutput,
-    optimizedPath,
+    ...buildZopfliPngArgs(optipngOutput, optimizedPath, options.max),
   ]);
   if (options.stripMeta) {
     await stripMetadata(optimizedPath);
@@ -437,7 +502,7 @@ async function optimizeWithOxipng(
 async function optimizeJpeg(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   const jpegtranOutput = join(workDir, "stage-1.jpg");
   const optimizedPath = join(workDir, "optimized.jpg");
@@ -475,7 +540,7 @@ async function optimizeJpeg(
 async function optimizeGif(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions,
+  options: CoreOptimizationOptions,
   animated: boolean
 ): Promise<PipelineResult> {
   const optimizedPath = join(workDir, "optimized.gif");
@@ -485,6 +550,9 @@ async function optimizeGif(
   }
   args.push(inputPath, "-o", optimizedPath);
   await runCheckedCommand("gifsicle", args);
+  if (options.stripMeta) {
+    await stripMetadata(optimizedPath);
+  }
   return {
     outputPath: optimizedPath,
     label: animated ? "[GIF-ANIM]" : "[GIF]",
@@ -494,7 +562,7 @@ async function optimizeGif(
 async function optimizeSvg(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   const optimizedPath = join(workDir, "optimized.svg");
   const args = [inputPath, "-o", optimizedPath];
@@ -502,16 +570,13 @@ async function optimizeSvg(
     args.unshift("--multipass");
   }
   await runCheckedCommand("svgo", args);
-  if (options.stripMeta) {
-    await stripMetadata(optimizedPath);
-  }
   return { outputPath: optimizedPath, label: "[SVG]" };
 }
 
 async function optimizeWebp(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions,
+  options: CoreOptimizationOptions,
   animated: boolean
 ): Promise<PipelineResult> {
   const optimizedPath = join(workDir, "optimized.webp");
@@ -519,7 +584,7 @@ async function optimizeWebp(
   if (animated) {
     const tempGif = join(workDir, "stage.gif");
     await runCheckedCommand("magick", [inputPath, tempGif]);
-    const gif2webpArgs = ["-lossless", "-m", options.max ? "6" : "4"];
+    const gif2webpArgs = ["-m", options.max ? "6" : "4"];
     if (options.max) {
       gif2webpArgs.push("-min_size");
     }
@@ -552,7 +617,7 @@ async function optimizeWebp(
 async function optimizeTiff(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   const optimizedPath = join(workDir, "optimized.tiff");
   await runCheckedCommand("tiffcp", [
@@ -570,7 +635,7 @@ async function optimizeTiff(
 async function optimizeHeif(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   const pngPath = join(workDir, "stage.png");
   const optimizedPath = join(workDir, "optimized.heif");
@@ -592,7 +657,7 @@ async function optimizeHeif(
 async function optimizeAvif(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   const pngPath = join(workDir, "stage.png");
   const optimizedPath = join(workDir, "optimized.avif");
@@ -613,17 +678,32 @@ async function optimizeAvif(
 async function optimizeBmp(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
+  const header = parseBmpHeader(await readFile(inputPath));
+  if (!header) {
+    throw new SkippableOptimizationError("unsupported or malformed BMP");
+  }
+
+  if (!canUseBmpRle(header)) {
+    throw new SkippableOptimizationError(
+      "bmp rle only applies to 4-bit or 8-bit bmp"
+    );
+  }
+
   const optimizedPath = join(workDir, "optimized.bmp");
   await runCheckedCommand("magick", [
     inputPath,
     "-compress",
-    "zip",
-    optimizedPath,
+    "RLE",
+    `BMP3:${optimizedPath}`,
   ]);
-  if (options.stripMeta) {
-    await stripMetadata(optimizedPath);
+
+  const optimizedHeader = parseBmpHeader(await readFile(optimizedPath));
+  if (!optimizedHeader || !isValidBmpRleRewrite(header, optimizedHeader)) {
+    throw new SkippableOptimizationError(
+      "bmp rle rewrite did not preserve indexed rle format"
+    );
   }
   return { outputPath: optimizedPath, label: "[BMP]" };
 }
@@ -631,25 +711,74 @@ async function optimizeBmp(
 async function optimizeJxl(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
-  const optimizedPath = join(workDir, "optimized.jxl");
-  await runCheckedCommand("cjxl", [
-    "--distance=0",
-    `--effort=${options.max ? "10" : "7"}`,
-    inputPath,
-    optimizedPath,
-  ]);
+  const optimizedPath = options.max
+    ? await optimizeJxlMax(inputPath, workDir)
+    : (await optimizeJxlCandidate(inputPath, join(workDir, "optimized.jxl"), 7))
+        .outputPath;
   if (options.stripMeta) {
     await stripMetadata(optimizedPath);
   }
   return { outputPath: optimizedPath, label: "[JXL]" };
 }
 
+async function optimizeJxlMax(
+  inputPath: string,
+  workDir: string
+): Promise<string> {
+  const candidates: CandidateResult[] = [];
+
+  for (const effort of MAX_JXL_EFFORTS) {
+    const outputPath = join(workDir, `optimized-e${effort}.jxl`);
+    candidates.push(await optimizeJxlCandidate(inputPath, outputPath, effort));
+  }
+
+  const best = await selectSmallestCandidate(candidates);
+  return best.outputPath;
+}
+
+async function optimizeJxlCandidate(
+  inputPath: string,
+  outputPath: string,
+  effort: (typeof MAX_JXL_EFFORTS)[number] | 7
+): Promise<CandidateResult> {
+  await runCheckedCommand("cjxl", buildJxlArgs(inputPath, outputPath, effort));
+  return { outputPath };
+}
+
+export function buildJxlArgs(
+  inputPath: string,
+  outputPath: string,
+  effort: (typeof MAX_JXL_EFFORTS)[number] | 7
+): string[] {
+  const args = ["--distance=0"];
+
+  if (effort === 11) {
+    args.push("--allow_expert_options");
+  }
+
+  args.push(`--effort=${effort}`, inputPath, outputPath);
+  return args;
+}
+
+export function buildZopfliPngArgs(
+  inputPath: string,
+  outputPath: string,
+  max: boolean
+): string[] {
+  return [
+    `--iterations=${max ? "15" : "10"}`,
+    "--filters=01234mepb",
+    inputPath,
+    outputPath,
+  ];
+}
+
 async function optimizeIco(
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   try {
     const entries = await listIcoEntries(inputPath);
@@ -686,6 +815,13 @@ async function optimizeIco(
       ...rebuiltEntries.map((filePath) => `--raw=${filePath}`),
     ]);
 
+    const rebuiltEntriesInfo = await listIcoEntries(optimizedPath);
+    if (!hasMatchingIcoDimensions(entries, rebuiltEntriesInfo)) {
+      throw new SkippableOptimizationError(
+        "rebuilt icon changed entry dimensions"
+      );
+    }
+
     return { outputPath: optimizedPath, label: "[ICO]" };
   } catch (error) {
     if (error instanceof SkippableOptimizationError) {
@@ -705,7 +841,7 @@ async function optimizeIco(
 async function optimizeEmbeddedIcoFrame(
   inputPath: string,
   candidateRoot: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<string> {
   await ensureDir(candidateRoot);
 
@@ -741,7 +877,7 @@ async function optimizeRaw(
   originalPath: string,
   inputPath: string,
   workDir: string,
-  options: CompressCommandOptions
+  options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
   if (!options.max) {
     await stripMetadata(inputPath);
@@ -749,11 +885,12 @@ async function optimizeRaw(
   }
 
   const parsed = parse(originalPath);
-  const optimizedPath = join(workDir, `${parsed.name}.dng`);
-  await runCheckedCommand("dnglab", ["convert", inputPath, optimizedPath]);
-  if (options.stripMeta) {
-    await stripMetadata(optimizedPath);
-  }
+  const optimizedPath = await optimizeRawToSmallestDng(
+    originalPath,
+    inputPath,
+    workDir,
+    options
+  );
   return {
     outputPath: optimizedPath,
     targetPath: join(dirname(originalPath), `${parsed.name}.dng`),
@@ -761,11 +898,80 @@ async function optimizeRaw(
   };
 }
 
+async function optimizeRawToSmallestDng(
+  originalPath: string,
+  inputPath: string,
+  workDir: string,
+  options: CoreOptimizationOptions
+): Promise<string> {
+  const parsed = parse(originalPath);
+  const extension = extname(originalPath).toLowerCase();
+
+  if (extension !== ".rw2") {
+    const optimizedPath = join(workDir, `${parsed.name}.dng`);
+    await runCheckedCommand(
+      "dnglab",
+      buildRawDnglabArgs(inputPath, optimizedPath)
+    );
+    if (options.stripMeta) {
+      await stripMetadata(optimizedPath);
+    }
+    return optimizedPath;
+  }
+
+  const candidates: CandidateResult[] = [];
+
+  for (const predictor of RAW_RW2_PREDICTORS) {
+    const candidatePath = join(workDir, `${parsed.name}-p${predictor}.dng`);
+    await runCheckedCommand(
+      "dnglab",
+      buildRawDnglabArgs(inputPath, candidatePath, predictor)
+    );
+    if (options.stripMeta) {
+      await stripMetadata(candidatePath);
+    }
+    candidates.push({ outputPath: candidatePath });
+  }
+
+  const best = await selectSmallestCandidate(candidates);
+  return best.outputPath;
+}
+
+const RAW_RW2_PREDICTORS = [1, 2, 3, 4, 5, 6, 7] as const;
+
+export function buildRawDnglabArgs(
+  inputPath: string,
+  outputPath: string,
+  predictor?: (typeof RAW_RW2_PREDICTORS)[number]
+): string[] {
+  const args = [
+    "convert",
+    "--compression",
+    "lossless",
+    "--embed-raw",
+    "false",
+    "--dng-preview",
+    "false",
+    "--dng-thumbnail",
+    "false",
+  ];
+
+  if (predictor !== undefined) {
+    args.push("--ljpeg92-predictor", String(predictor));
+  }
+
+  args.push(inputPath, outputPath);
+
+  return args;
+}
+
 async function stripExifOnly(
   originalPath: string,
   workingInputPath: string,
   originalStats: Awaited<ReturnType<typeof stat>>,
-  options: CompressCommandOptions
+  targetPath: string,
+  preserveOriginal: boolean,
+  options: CoreOptimizationOptions
 ): Promise<OptimizationResult> {
   await stripMetadata(workingInputPath);
 
@@ -776,6 +982,16 @@ async function stripExifOnly(
   const savedBytes = originalSize - optimizedSize;
 
   if (!changed) {
+    if (!options.dryRun && preserveOriginal && targetPath !== originalPath) {
+      await writeSkippedOutput({
+        sourcePath: originalPath,
+        targetPath,
+        keepTime: options.keepTime,
+        originalAtime: originalStats.atime,
+        originalMtime: originalStats.mtime,
+      });
+    }
+
     return {
       filePath: originalPath,
       label: "[EXIF]",
@@ -784,10 +1000,21 @@ async function stripExifOnly(
       optimizedSize,
       savedBytes: Math.max(savedBytes, 0),
       message: "no removable metadata",
+      targetPath,
     };
   }
 
   if (savedBytes < 0) {
+    if (!options.dryRun && preserveOriginal && targetPath !== originalPath) {
+      await writeSkippedOutput({
+        sourcePath: originalPath,
+        targetPath,
+        keepTime: options.keepTime,
+        originalAtime: originalStats.atime,
+        originalMtime: originalStats.mtime,
+      });
+    }
+
     return {
       filePath: originalPath,
       label: "[EXIF]",
@@ -796,6 +1023,7 @@ async function stripExifOnly(
       optimizedSize,
       savedBytes: 0,
       message: describeSkipReason(savedBytes, 0),
+      targetPath,
     };
   }
 
@@ -807,13 +1035,15 @@ async function stripExifOnly(
       originalSize,
       optimizedSize,
       savedBytes: Math.max(savedBytes, 0),
+      targetPath,
     };
   }
 
   await applyReplacement({
     sourcePath: workingInputPath,
     originalPath,
-    targetPath: originalPath,
+    targetPath,
+    preserveOriginal,
     keepTime: options.keepTime,
     originalAtime: originalStats.atime,
     originalMtime: originalStats.mtime,
@@ -826,14 +1056,149 @@ async function stripExifOnly(
     originalSize,
     optimizedSize,
     savedBytes: Math.max(savedBytes, 0),
+    targetPath,
+  };
+}
+
+async function stripSvgMetadataOnly(
+  originalPath: string,
+  workingInputPath: string,
+  workDir: string,
+  originalStats: Awaited<ReturnType<typeof stat>>,
+  targetPath: string,
+  preserveOriginal: boolean,
+  options: CoreOptimizationOptions
+): Promise<OptimizationResult> {
+  const optimizedPath = join(workDir, "svg-metadata-only.svg");
+  await stripSvgMetadata(workingInputPath, optimizedPath);
+
+  const optimizedStats = await stat(optimizedPath);
+  const changed = !(await filesAreIdentical(originalPath, optimizedPath));
+  const originalSize = Number(originalStats.size);
+  const optimizedSize = Number(optimizedStats.size);
+  const savedBytes = originalSize - optimizedSize;
+
+  if (!changed) {
+    if (!options.dryRun && preserveOriginal && targetPath !== originalPath) {
+      await writeSkippedOutput({
+        sourcePath: originalPath,
+        targetPath,
+        keepTime: options.keepTime,
+        originalAtime: originalStats.atime,
+        originalMtime: originalStats.mtime,
+      });
+    }
+
+    return {
+      filePath: originalPath,
+      label: "[EXIF]",
+      status: "skipped",
+      originalSize,
+      optimizedSize,
+      savedBytes: Math.max(savedBytes, 0),
+      message: "no removable metadata",
+      targetPath,
+    };
+  }
+
+  if (savedBytes < 0) {
+    if (!options.dryRun && preserveOriginal && targetPath !== originalPath) {
+      await writeSkippedOutput({
+        sourcePath: originalPath,
+        targetPath,
+        keepTime: options.keepTime,
+        originalAtime: originalStats.atime,
+        originalMtime: originalStats.mtime,
+      });
+    }
+
+    return {
+      filePath: originalPath,
+      label: "[EXIF]",
+      status: "skipped",
+      originalSize,
+      optimizedSize,
+      savedBytes: 0,
+      message: describeSkipReason(savedBytes, 0),
+      targetPath,
+    };
+  }
+
+  if (options.dryRun) {
+    return {
+      filePath: originalPath,
+      label: "[EXIF]",
+      status: "dry-run",
+      originalSize,
+      optimizedSize,
+      savedBytes: Math.max(savedBytes, 0),
+      targetPath,
+    };
+  }
+
+  await applyReplacement({
+    sourcePath: optimizedPath,
+    originalPath,
+    targetPath,
+    preserveOriginal,
+    keepTime: options.keepTime,
+    originalAtime: originalStats.atime,
+    originalMtime: originalStats.mtime,
+  });
+
+  return {
+    filePath: originalPath,
+    label: "[EXIF]",
+    status: "optimized",
+    originalSize,
+    optimizedSize,
+    savedBytes: Math.max(savedBytes, 0),
+    targetPath,
   };
 }
 
 async function stripMetadata(filePath: string): Promise<void> {
-  await runCheckedCommand("exiftool", [
-    "-overwrite_original",
-    "-all=",
-    filePath,
+  const args = ["-overwrite_original"];
+
+  if (extname(filePath).toLowerCase() === ".jxl") {
+    args.push("-m");
+  }
+
+  args.push("-all=", filePath);
+
+  await runCheckedCommand("exiftool", args);
+}
+
+async function stripSvgMetadata(
+  inputPath: string,
+  outputPath: string
+): Promise<void> {
+  const configPath = join(dirname(outputPath), "svgo-metadata-only.config.mjs");
+  await writeFile(
+    configPath,
+    [
+      "export default {",
+      "  plugins: [",
+      '    "removeMetadata",',
+      '    "removeComments",',
+      '    "removeEditorsNSData",',
+      '    "removeDesc",',
+      '    "removeTitle",',
+      '    "removeDoctype",',
+      '    "removeXMLProcInst",',
+      "  ],",
+      "};",
+      "",
+    ].join("\n"),
+    "utf8"
+  );
+
+  await runCheckedCommand("svgo", [
+    "--config",
+    configPath,
+    inputPath,
+    "-o",
+    outputPath,
   ]);
 }
 
@@ -931,6 +1296,72 @@ export function parseIcoEntries(output: string): IcoEntry[] {
   return entries;
 }
 
+export function hasMatchingIcoDimensions(
+  expected: IcoEntry[],
+  actual: IcoEntry[]
+): boolean {
+  if (expected.length !== actual.length) {
+    return false;
+  }
+
+  return expected.every((entry, index) => {
+    const rebuilt = actual[index];
+    return (
+      rebuilt !== undefined &&
+      rebuilt.width === entry.width &&
+      rebuilt.height === entry.height
+    );
+  });
+}
+
+export function parseBmpHeader(buffer: Uint8Array): BmpHeaderInfo | null {
+  if (buffer.length < 54) {
+    return null;
+  }
+
+  const view = Buffer.from(buffer);
+  if (view.toString("ascii", 0, 2) !== "BM") {
+    return null;
+  }
+
+  const dibHeaderSize = view.readUInt32LE(14);
+  if (dibHeaderSize < 40 || buffer.length < 14 + dibHeaderSize) {
+    return null;
+  }
+
+  const bitsPerPixel = view.readUInt16LE(28);
+  const compression = view.readUInt32LE(30);
+
+  return {
+    dibHeaderSize,
+    bitsPerPixel,
+    compression,
+  };
+}
+
+export function canUseBmpRle(header: BmpHeaderInfo): boolean {
+  return header.bitsPerPixel === 4 || header.bitsPerPixel === 8;
+}
+
+export function isValidBmpRleRewrite(
+  original: BmpHeaderInfo,
+  rewritten: BmpHeaderInfo
+): boolean {
+  if (original.bitsPerPixel !== rewritten.bitsPerPixel) {
+    return false;
+  }
+
+  if (rewritten.bitsPerPixel === 4) {
+    return rewritten.compression === 2;
+  }
+
+  if (rewritten.bitsPerPixel === 8) {
+    return rewritten.compression === 1;
+  }
+
+  return false;
+}
+
 function extractNumber(line: string, key: string): number | null {
   const value = extractOptionalNumber(line, key);
   return value === null ? null : value;
@@ -993,6 +1424,7 @@ export async function applyReplacement(params: {
   sourcePath: string;
   originalPath: string;
   targetPath: string;
+  preserveOriginal: boolean;
   keepTime: boolean;
   originalAtime: Date;
   originalMtime: Date;
@@ -1001,12 +1433,23 @@ export async function applyReplacement(params: {
     sourcePath,
     originalPath,
     targetPath,
+    preserveOriginal,
     keepTime,
     originalAtime,
     originalMtime,
   } = params;
 
   if (targetPath !== originalPath) {
+    await ensureDir(dirname(targetPath));
+
+    if (preserveOriginal) {
+      await copy(sourcePath, targetPath, { overwrite: true });
+      if (keepTime) {
+        await utimes(targetPath, originalAtime, originalMtime);
+      }
+      return;
+    }
+
     if (await pathExists(targetPath)) {
       throw new Error(`target already exists: ${targetPath}`);
     }
@@ -1023,6 +1466,24 @@ export async function applyReplacement(params: {
 
   if (keepTime) {
     await utimes(originalPath, originalAtime, originalMtime);
+  }
+}
+
+async function writeSkippedOutput(params: {
+  sourcePath: string;
+  targetPath: string;
+  keepTime: boolean;
+  originalAtime: Date;
+  originalMtime: Date;
+}): Promise<void> {
+  const { sourcePath, targetPath, keepTime, originalAtime, originalMtime } =
+    params;
+
+  await ensureDir(dirname(targetPath));
+  await copy(sourcePath, targetPath, { overwrite: true });
+
+  if (keepTime) {
+    await utimes(targetPath, originalAtime, originalMtime);
   }
 }
 

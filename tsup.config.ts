@@ -1,0 +1,21 @@
+import { defineConfig } from "tsup";
+
+export default defineConfig({
+  entry: {
+    index: "src/api/index.ts",
+    gulp: "src/integrations/gulp.ts",
+    grunt: "src/integrations/grunt.ts",
+    webpack: "src/integrations/webpack.ts",
+    rollup: "src/integrations/rollup.ts",
+    vite: "src/integrations/vite.ts",
+    next: "src/integrations/next.ts",
+    esbuild: "src/integrations/esbuild.ts",
+  },
+  format: ["esm", "cjs"],
+  dts: true,
+  sourcemap: true,
+  clean: false,
+  splitting: false,
+  target: "node18",
+  outDir: "dist",
+});

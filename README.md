@@ -103,7 +103,31 @@ Self-update to the latest release:
 squeezit -U
 ```
 
+## Integrations
+
+`squeezit` is now structured to expose first-party integrations from the same package.
+
+Available today:
+
+- Root JS/TS API via `import { optimizeFile, optimizeFiles, stripMetadata } from "squeezit"`
+
+Planned package subpaths:
+
+- `squeezit/gulp`
+- `squeezit/grunt`
+- `squeezit/webpack`
+- `squeezit/rollup`
+- `squeezit/vite`
+- `squeezit/next`
+- `squeezit/esbuild`
+
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. Until those wrappers land, the root JS/TS API is the supported programmatic integration surface.
+
+The fixture-value helper and JS/TS API report `filePath` and `outputPath` relative to the effective `cwd`, not as absolute machine-specific paths.
+
 ## Documentation
+
+- [API reference](./docs/API.md)
 
 ### Usage
 
@@ -230,10 +254,10 @@ Squeezit currently supports these image format families:
 - `TIFF` (`.tif`, `.tiff`): lossless ZIP recompression, with a heavier ZIP preset in `--max`
 - `HEIF / HEIC` (`.heif`, `.heic`): lossless re-encode, with a slower encoder preset in `--max`
 - `AVIF` (`.avif`): lossless re-encode, with a slower encoder speed in `--max`
-- `BMP` (`.bmp`): recompressed with lossless ZIP compression
-- `JPEG XL` (`.jxl`): lossless re-encode, with a faster default pass and heavier effort in `--max`
-- `ICO` (`.ico`): modernized by extracting embedded icon images, optimizing them, and rebuilding the icon container while preserving the available icon sizes
-- `RAW camera files` (`.cr2`, `.nef`, `.arw`, `.raf`, `.orf`, `.rw2`): metadata stripping in `--exif` mode, optional RAW-to-DNG conversion in `--max` mode
+- `BMP` (`.bmp`): lossless RLE recompression for source 4-bit and 8-bit BMPs only; higher-bit BMPs are skipped
+- `JPEG XL` (`.jxl`): lossless re-encode, with a faster default pass and multi-effort candidate comparison in `--max`
+- `ICO` (`.ico`): modernized by extracting embedded icon images, optimizing them, and rebuilding the icon container while preserving the original entry dimensions; if the rebuilt icon changes the dimension set, it is skipped
+- `RAW camera files` (`.cr2`, `.nef`, `.arw`, `.raf`, `.orf`, `.rw2`): metadata stripping in `--exif` mode, optional RAW-to-DNG conversion in `--max` mode using the smallest lossless DNG settings
 
 Notes:
 
@@ -242,7 +266,9 @@ Notes:
 - `--max` always strips metadata in addition to raising encoder effort across the supported recompression pipelines
 - `--max` forces the replacement threshold to `0`, so any positive lossless reduction is accepted
 - ICO support is focused on modernizing containers while preserving icon sizes, not preserving original legacy BMP-style encoding byte-for-byte
+- BMP metadata-only writing is not supported; BMP optimization only rewrites eligible indexed BMP image data
 - RAW files are special-case inputs and only convert to `.dng` in `--max` mode
+- RAW `--max` conversion now targets the smallest lossless DNG by disabling embedded RAW, preview, and thumbnail payloads; `.rw2` inputs also try the available lossless JPEG predictor variants and keep the smallest result
 
 ## System Dependencies
 

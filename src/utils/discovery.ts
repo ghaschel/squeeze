@@ -1,10 +1,12 @@
 import { lstat } from "node:fs/promises";
 import { basename, extname, relative, resolve } from "node:path";
 
-import { pathExists } from "fs-extra";
+import fsExtra from "fs-extra";
 import { glob } from "glob";
 
-import type { CompressCommandOptions, ResolvedInput } from "../types";
+import type { CoreInputResolutionOptions, ResolvedInput } from "../types";
+
+const { pathExists } = fsExtra;
 
 const SUPPORTED_EXTENSIONS = new Set([
   ".jpg",
@@ -31,7 +33,7 @@ const SUPPORTED_EXTENSIONS = new Set([
 ]);
 
 export async function resolveInputs(
-  options: CompressCommandOptions
+  options: CoreInputResolutionOptions
 ): Promise<ResolvedInput[]> {
   if (options.patterns.length === 0) {
     return resolveDefaultInputs(options.cwd, options.recursive);

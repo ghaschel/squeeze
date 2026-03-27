@@ -1,3 +1,5 @@
+import type { CoreBatchOptions } from "./core";
+
 export interface CompressCliFlags {
   recursive?: boolean;
   max?: boolean;
@@ -15,18 +17,7 @@ export interface CompressCliFlags {
   pm?: string;
 }
 
-export interface CompressCommandOptions {
-  patterns: string[];
-  recursive: boolean;
-  max: boolean;
-  stripMeta: boolean;
-  exifOnly: boolean;
-  dryRun: boolean;
-  keepTime: boolean;
-  concurrency: number;
+export interface CompressCommandOptions extends CoreBatchOptions {
   installDeps: boolean;
   verbose: boolean;
-  threshold: number;
-  inPlace: boolean;
-  cwd: string;
 }

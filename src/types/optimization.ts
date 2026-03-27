@@ -16,6 +16,8 @@ export type SupportedFormat =
 export interface ResolvedInput {
   absolutePath: string;
   displayPath: string;
+  outputPath?: string;
+  preserveOriginal?: boolean;
 }
 
 export interface DependencySpec {
