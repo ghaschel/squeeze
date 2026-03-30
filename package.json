@@ -144,6 +144,7 @@
     "postinstall": "node ./postinstall.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:gulp": "vitest run tests/integration/gulp.test.ts",
     "test:vite": "vitest run tests/integration/vite.test.ts",
     "test:webpack": "vitest run tests/integration/webpack.test.ts",
     "test:next": "bun run build && vitest run tests/integration/next.test.ts",
@@ -161,6 +162,8 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@eslint/js": "^10.0.1",
+    "@types/gulp": "^4.0.17",
+    "@types/vinyl": "^2.0.12",
     "@vitest/coverage-v8": "^4.0.7",
     "@arethetypeswrong/cli": "^0.18.2",
     "@types/bun": "latest",
@@ -172,6 +175,7 @@
     "eslint-plugin-simple-import-sort": "^12.1.1",
     "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
+    "gulp": "^5.0.1",
     "lint-staged": "^16.4.0",
     "next": "^16.2.1",
     "prettier": "^3.8.1",
@@ -185,15 +189,20 @@
     "typescript-eslint": "^8.57.1",
     "vite": "^8.0.2",
     "vitest": "^4.0.7",
+    "vinyl": "^3.0.1",
     "webpack": "^5.105.4"
   },
   "peerDependencies": {
+    "gulp": "^5.0.1",
     "next": "^16.2.1",
     "typescript": "^5",
     "vite": "^8.0.2",
     "webpack": "^5.105.4"
   },
   "peerDependenciesMeta": {
+    "gulp": {
+      "optional": true
+    },
     "next": {
       "optional": true
     },

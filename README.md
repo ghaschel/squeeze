@@ -110,18 +110,31 @@ squeezit -U
 Available today:
 
 - Root JS/TS API via `import { optimizeFile, optimizeFiles, stripMetadata } from "squeezit"`
+- Gulp plugin via `import { squeezitGulp } from "squeezit/gulp"`
 - Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 
 Planned package subpaths:
 
-- `squeezit/gulp`
 - `squeezit/grunt`
 - `squeezit/rollup`
 - `squeezit/esbuild`
 
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Vite plugin, the Webpack plugin, and the Next.js wrapper.
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Vite plugin, the Webpack plugin, and the Next.js wrapper.
+
+### Gulp
+
+```js
+const { src, dest } = require("gulp");
+const { squeezitGulp } = require("squeezit/gulp");
+
+exports.images = function images() {
+  return src("assets/**/*").pipe(squeezitGulp()).pipe(dest("dist/assets"));
+};
+```
+
+The Gulp plugin runs as a Vinyl transform, uses the default compression strategy, and always enables metadata stripping. v1 supports buffered Vinyl files and path-backed Vinyl files, and rejects streaming contents with a clear error. It does not expose or use `max` mode.
 
 ### Vite
 

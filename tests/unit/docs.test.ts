@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import * as api from "../../src/api";
+import { squeezitGulp } from "../../src/integrations/gulp";
 import { withSqueezit } from "../../src/integrations/next";
 import { squeezitVite } from "../../src/integrations/vite";
 import { squeezitWebpack } from "../../src/integrations/webpack";
@@ -48,6 +49,10 @@ describe("documentation coverage", () => {
 
   test("exports the next integration", () => {
     expect(typeof withSqueezit).toBe("function");
+  });
+
+  test("exports the gulp integration", () => {
+    expect(typeof squeezitGulp).toBe("function");
   });
 
   test("declares the root and planned integration exports in package.json", async () => {

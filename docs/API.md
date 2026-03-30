@@ -22,6 +22,7 @@ import {
 Integration entrypoints:
 
 ```ts
+import { squeezitGulp } from "squeezit/gulp";
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
 import { withSqueezit } from "squeezit/next";
@@ -158,6 +159,19 @@ bun run fixture-values -- --mode max tests/fixtures/formats/png/sample.png tests
 Use that output to replace the placeholder expected sizes and statuses in the fixture manifest used by the integration tests.
 
 ## Bundler Plugins
+
+### Gulp
+
+```ts
+import { dest, src } from "gulp";
+import { squeezitGulp } from "squeezit/gulp";
+
+export function images() {
+  return src("assets/**/*").pipe(squeezitGulp()).pipe(dest("dist/assets"));
+}
+```
+
+The Gulp plugin runs as a Vinyl transform, uses the default compression strategy, and always enables metadata stripping. v1 supports buffered Vinyl files and path-backed Vinyl files, and rejects stream contents.
 
 ### Vite
 
