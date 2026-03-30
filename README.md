@@ -1,15 +1,15 @@
 <p align="center">
-  <img src="./assets/squeezit-logo.svg" alt="squeezit logo" width="220" />
+  <img src="https://raw.githubusercontent.com/ghaschel/squeeze/main/assets/squeezit-logo.svg" alt="squeezit logo" width="80%" />
 </p>
 
 <p align="center">
-  <img src="./assets/squeezit-wordmark.svg" alt="Squeezit" width="280" />
+  <img src="https://raw.githubusercontent.com/ghaschel/squeeze/main/assets/squeezit-wordmark.svg" alt="Squeezit" width="440" />
 </p>
 
 <p align="center">
   <a href="https://www.npmjs.com/package/squeezit"><img src="https://img.shields.io/npm/v/squeezit.svg?color=0f766e&label=npm" alt="npm version" style="margin-right: 10px;"></a>
   <a href="https://www.npmjs.com/package/squeezit"><img src="https://img.shields.io/npm/dm/squeezit.svg?color=1d4ed8&label=downloads" alt="npm downloads" style="margin-right: 10px;"></a>
-  <a href="./LICENSE"><img src="https://img.shields.io/npm/l/squeezit.svg?color=334155&label=license" alt="license"></a>
+  <a href="https://github.com/ghaschel/squeeze/blob/main/LICENSE"><img src="https://img.shields.io/npm/l/squeezit.svg?color=334155&label=license" alt="license"></a>
 </p>
 
 `squeezit` is a CLI for aggressively compressing images without casually degrading them. It is designed for codebases, asset folders, and content repositories where you want smaller files, predictable behavior, and a command you can trust in day-to-day workflows.
@@ -140,7 +140,7 @@ The fixture-value helper and JS/TS API report `filePath` and `outputPath` relati
 
 ## Documentation
 
-- [API reference](./docs/API.md)
+- [API reference](https://github.com/ghaschel/squeeze/blob/main/docs/API.md)
 
 ### Usage
 
@@ -374,4 +374,4 @@ bun test
 
 ## License
 
-[MIT](./LICENSE)
+[MIT](https://github.com/ghaschel/squeeze/blob/main/LICENSE)
