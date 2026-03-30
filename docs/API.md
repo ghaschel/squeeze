@@ -24,6 +24,7 @@ Integration entrypoints:
 ```ts
 import { squeezitGulp } from "squeezit/gulp";
 import { registerSqueezitTask } from "squeezit/grunt";
+import { squeezitEsbuild } from "squeezit/esbuild";
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
 import { withSqueezit } from "squeezit/next";
@@ -198,6 +199,27 @@ module.exports = function (grunt) {
 ```
 
 The Grunt integration registers a real multi-task, uses the default compression strategy, always enables metadata stripping, and respects Grunt `files` mappings for in-place or destination-output workflows.
+
+### esbuild
+
+```ts
+import { build } from "esbuild";
+import {
+  createEsbuildCoreOptions,
+  createEsbuildOptimizationOptions,
+  optimizeEsbuildOutputDirectory,
+  squeezitEsbuild,
+} from "squeezit/esbuild";
+
+await build({
+  entryPoints: ["src/index.ts"],
+  outdir: "dist",
+  bundle: true,
+  plugins: [squeezitEsbuild()],
+});
+```
+
+The esbuild integration runs after a successful disk-backed build, uses the default compression strategy, and always enables metadata stripping. It requires `write !== false` and either `outdir` or `outfile`, and exposes helper functions for tests and custom tooling.
 
 ### Vite
 

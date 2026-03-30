@@ -24,6 +24,7 @@
         "@vitest/coverage-v8": "^4.0.7",
         "commit-and-tag-version": "^12.7.0",
         "cz-git": "^1.12.0",
+        "esbuild": "^0.27.4",
         "eslint": "^10.0.3",
         "eslint-config-prettier": "^10.1.8",
         "eslint-plugin-prettier": "^5.5.5",
@@ -49,6 +50,7 @@
         "webpack": "^5.105.4",
       },
       "peerDependencies": {
+        "esbuild": "^0.27.4",
         "grunt": "^1.6.1",
         "gulp": "^5.0.1",
         "next": "^16.2.1",
@@ -57,6 +59,7 @@
         "webpack": "^5.105.4",
       },
       "optionalPeers": [
+        "esbuild",
         "grunt",
         "gulp",
         "next",

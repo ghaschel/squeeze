@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import * as api from "../../src/api";
+import { squeezitEsbuild } from "../../src/integrations/esbuild";
 import { registerSqueezitTask } from "../../src/integrations/grunt";
 import { squeezitGulp } from "../../src/integrations/gulp";
 import { withSqueezit } from "../../src/integrations/next";
@@ -19,6 +20,7 @@ describe("documentation coverage", () => {
     expect(readme).toContain("squeezit/vite");
     expect(readme).toContain("squeezit/webpack");
     expect(readme).toContain("squeezit/next");
+    expect(readme).toContain("squeezit/esbuild");
   });
 
   test("contains dedicated API documentation", async () => {
@@ -58,6 +60,10 @@ describe("documentation coverage", () => {
 
   test("exports the grunt integration", () => {
     expect(typeof registerSqueezitTask).toBe("function");
+  });
+
+  test("exports the esbuild integration", () => {
+    expect(typeof squeezitEsbuild).toBe("function");
   });
 
   test("declares the root and planned integration exports in package.json", async () => {

@@ -115,13 +115,13 @@ Available today:
 - Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
+- esbuild plugin via `import { squeezitEsbuild } from "squeezit/esbuild"`
 
 Planned package subpaths:
 
 - `squeezit/rollup`
-- `squeezit/esbuild`
 
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, and the Next.js wrapper.
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Next.js wrapper, and the esbuild plugin.
 
 ### Gulp
 
@@ -201,6 +201,22 @@ module.exports = withSqueezit({
 The Next.js wrapper augments webpack-based Next builds by injecting the `squeezit` Webpack plugin through `next.config.js`/`next.config.ts`. It uses the default compression strategy, always enables metadata stripping, and does not expose or use `max` mode.
 
 Turbopack support is not included in this wrapper yet. It is planned and coming soon, but this integration currently targets Next’s webpack build pipeline only.
+
+### esbuild
+
+```ts
+import { build } from "esbuild";
+import { squeezitEsbuild } from "squeezit/esbuild";
+
+await build({
+  entryPoints: ["src/index.ts"],
+  outdir: "dist",
+  bundle: true,
+  plugins: [squeezitEsbuild()],
+});
+```
+
+The esbuild plugin runs after a successful disk-backed build, optimizes emitted image files from the written output directory, uses the default compression strategy, and always enables metadata stripping. It does not expose or use `max` mode.
 
 The fixture-value helper and JS/TS API report `filePath` and `outputPath` relative to the effective `cwd`, not as absolute machine-specific paths.
 
