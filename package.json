@@ -107,6 +107,7 @@
     "postinstall": "node ./postinstall.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:vite": "vitest run tests/integration/vite.test.ts",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "check:exports": "publint",
@@ -140,10 +141,17 @@
     "remark-stringify": "^11.0.0",
     "tsup": "^8.5.0",
     "typescript-eslint": "^8.57.1",
+    "vite": "^8.0.2",
     "vitest": "^4.0.7"
   },
   "peerDependencies": {
-    "typescript": "^5"
+    "typescript": "^5",
+    "vite": "^8.0.2"
+  },
+  "peerDependenciesMeta": {
+    "vite": {
+      "optional": true
+    }
   },
   "dependencies": {
     "chalk": "^5.6.2",

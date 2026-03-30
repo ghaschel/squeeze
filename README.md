@@ -110,6 +110,7 @@ squeezit -U
 Available today:
 
 - Root JS/TS API via `import { optimizeFile, optimizeFiles, stripMetadata } from "squeezit"`
+- Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 
 Planned package subpaths:
 
@@ -117,11 +118,23 @@ Planned package subpaths:
 - `squeezit/grunt`
 - `squeezit/webpack`
 - `squeezit/rollup`
-- `squeezit/vite`
 - `squeezit/next`
 - `squeezit/esbuild`
 
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. Until those wrappers land, the root JS/TS API is the supported programmatic integration surface.
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API and the Vite plugin.
+
+### Vite
+
+```ts
+import { defineConfig } from "vite";
+import { squeezitVite } from "squeezit/vite";
+
+export default defineConfig({
+  plugins: [squeezitVite()],
+});
+```
+
+The Vite plugin runs only for production builds, optimizes emitted assets from the output directory, uses the default compression strategy, and always enables metadata stripping. It does not expose or use `max` mode.
 
 The fixture-value helper and JS/TS API report `filePath` and `outputPath` relative to the effective `cwd`, not as absolute machine-specific paths.
 

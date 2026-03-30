@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import * as api from "../../src/api";
+import { squeezitVite } from "../../src/integrations/vite";
 
 describe("documentation coverage", () => {
   test("documents integrations in the readme", async () => {
@@ -31,6 +32,10 @@ describe("documentation coverage", () => {
     expect(typeof api.optimizeFiles).toBe("function");
     expect(typeof api.stripMetadata).toBe("function");
     expect(typeof api.getOptimizationFixtureValues).toBe("function");
+  });
+
+  test("exports the vite integration", () => {
+    expect(typeof squeezitVite).toBe("function");
   });
 
   test("declares the root and planned integration exports in package.json", async () => {
