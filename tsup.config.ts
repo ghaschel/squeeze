@@ -10,6 +10,7 @@ export default defineConfig({
     vite: "src/integrations/vite.ts",
     next: "src/integrations/next.ts",
     esbuild: "src/integrations/esbuild.ts",
+    babel: "src/integrations/babel.ts",
   },
   format: ["esm", "cjs"],
   dts: true,

@@ -24,6 +24,7 @@ Integration entrypoints:
 ```ts
 import { squeezitGulp } from "squeezit/gulp";
 import { registerSqueezitTask } from "squeezit/grunt";
+import { squeezitBabel } from "squeezit/babel";
 import { squeezitEsbuild } from "squeezit/esbuild";
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
@@ -220,6 +221,18 @@ await build({
 ```
 
 The esbuild integration runs after a successful disk-backed build, uses the default compression strategy, and always enables metadata stripping. It requires `write !== false` and either `outdir` or `outfile`, and exposes helper functions for tests and custom tooling.
+
+### Babel
+
+```ts
+import { squeezitBabel } from "squeezit/babel";
+
+export default {
+  plugins: [[squeezitBabel, { productionOnly: true }]],
+};
+```
+
+The Babel integration is a compile-time static-reference rewrite plugin, not an emitted-asset optimizer. It is production-only by default, rewrites static local `import` / `require` asset references plus static JSX string-literal asset attributes, and writes optimized generated copies under `.squeezit/babel-assets`.
 
 ### Vite
 

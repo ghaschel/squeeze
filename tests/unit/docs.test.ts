@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import * as api from "../../src/api";
+import { squeezitBabel } from "../../src/integrations/babel";
 import { squeezitEsbuild } from "../../src/integrations/esbuild";
 import { registerSqueezitTask } from "../../src/integrations/grunt";
 import { squeezitGulp } from "../../src/integrations/gulp";
@@ -21,6 +22,7 @@ describe("documentation coverage", () => {
     expect(readme).toContain("squeezit/webpack");
     expect(readme).toContain("squeezit/next");
     expect(readme).toContain("squeezit/esbuild");
+    expect(readme).toContain("squeezit/babel");
   });
 
   test("contains dedicated API documentation", async () => {
@@ -66,6 +68,10 @@ describe("documentation coverage", () => {
     expect(typeof squeezitEsbuild).toBe("function");
   });
 
+  test("exports the babel integration", () => {
+    expect(typeof squeezitBabel).toBe("function");
+  });
+
   test("declares the root and planned integration exports in package.json", async () => {
     const packageJson = JSON.parse(
       await readFile(join(process.cwd(), "package.json"), "utf8")
@@ -79,6 +85,7 @@ describe("documentation coverage", () => {
     expect(packageJson.exports).toHaveProperty("./rollup");
     expect(packageJson.exports).toHaveProperty("./next");
     expect(packageJson.exports).toHaveProperty("./esbuild");
+    expect(packageJson.exports).toHaveProperty("./babel");
     expect(packageJson.exports).toHaveProperty("./grunt");
   });
 });

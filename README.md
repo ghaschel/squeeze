@@ -116,12 +116,13 @@ Available today:
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 - esbuild plugin via `import { squeezitEsbuild } from "squeezit/esbuild"`
+- Babel plugin via `import { squeezitBabel } from "squeezit/babel"`
 
 Planned package subpaths:
 
 - `squeezit/rollup`
 
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Next.js wrapper, and the esbuild plugin.
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
 
 ### Gulp
 
@@ -217,6 +218,18 @@ await build({
 ```
 
 The esbuild plugin runs after a successful disk-backed build, optimizes emitted image files from the written output directory, uses the default compression strategy, and always enables metadata stripping. It does not expose or use `max` mode.
+
+### Babel
+
+```ts
+import { squeezitBabel } from "squeezit/babel";
+
+export default {
+  plugins: [[squeezitBabel, { productionOnly: true }]],
+};
+```
+
+The Babel plugin is narrower than the emitted-asset integrations. It runs at compile time, is production-only by default, rewrites static local image imports and static JSX string-literal asset references, and writes optimized generated copies under `.squeezit/babel-assets`. It does not mutate source assets and does not expose or use `max` mode.
 
 The fixture-value helper and JS/TS API report `filePath` and `outputPath` relative to the effective `cwd`, not as absolute machine-specific paths.
 
