@@ -112,18 +112,39 @@ describe("gulp integration", () => {
     expect(assets.length).toBeGreaterThan(0);
   });
 
-  test("rejects streaming vinyl contents", async () => {
+  test("supports streaming vinyl contents by buffering them internally", async () => {
     const workspace = await createWorkspace();
     const inputDir = await scaffoldInputFixtures(workspace);
 
-    await expect(
-      runGulpPipeline(inputDir, join(workspace, "streamed"), {
-        plugin: squeezitGulp(),
-        buffer: false,
-      })
-    ).rejects.toThrow(
-      "[squeezit:gulp] Streaming Vinyl contents are not supported yet."
+    await runGulpPipeline(inputDir, join(workspace, "baseline"));
+    await runGulpPipeline(inputDir, join(workspace, "streamed"), {
+      plugin: squeezitGulp(),
+      buffer: false,
+    });
+
+    const baselineAssets = await findBuiltAssets(join(workspace, "baseline"));
+    const streamedAssets = await findBuiltAssets(join(workspace, "streamed"));
+
+    expect(streamedAssets).toHaveLength(baselineAssets.length);
+    expect(await totalAssetSize(streamedAssets)).toBeLessThan(
+      await totalAssetSize(baselineAssets)
     );
+  });
+
+  test("passes through null vinyl files without a usable path", async () => {
+    const plugin = squeezitGulp();
+    const file = {
+      relative: "virtual.png",
+      contents: null,
+      isBuffer: () => false,
+      isStream: () => false,
+      isNull: () => true,
+    };
+
+    const result = await runSingleVinylThroughPlugin(plugin, file);
+
+    expect(result).toBe(file);
+    expect(result.contents).toBeNull();
   });
 });
 
@@ -188,6 +209,19 @@ async function runStreamChain(stages: NodeJS.ReadWriteStream[]): Promise<void> {
     for (const stage of remainingStages) {
       stage.on("error", reject);
     }
+  });
+}
+
+async function runSingleVinylThroughPlugin<T>(
+  plugin: NodeJS.ReadWriteStream,
+  file: T
+): Promise<T> {
+  return await new Promise<T>((resolve, reject) => {
+    plugin.once("data", (chunk) => resolve(chunk as T));
+    plugin.once("error", reject);
+    plugin.once("end", () => resolve(file));
+    plugin.write(file);
+    plugin.end();
   });
 }
 

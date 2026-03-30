@@ -135,7 +135,7 @@ exports.images = function images() {
 };
 ```
 
-The Gulp plugin runs as a Vinyl transform, uses the default compression strategy, and always enables metadata stripping. v1 supports buffered Vinyl files and path-backed Vinyl files, and rejects streaming contents with a clear error. It does not expose or use `max` mode.
+The Gulp plugin runs as a Vinyl transform, uses the default compression strategy, and always enables metadata stripping. It supports buffered Vinyl files, stream-backed Vinyl files by buffering them internally before optimization, and path-backed null Vinyl files when `file.path` is available. Null Vinyl files without a usable path pass through unchanged. It does not expose or use `max` mode.
 
 ### Grunt
 

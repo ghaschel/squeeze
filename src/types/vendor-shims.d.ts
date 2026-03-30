@@ -26,5 +26,6 @@ declare module "vinyl" {
     contents: Buffer | NodeJS.ReadableStream | null;
     isBuffer(): boolean;
     isStream(): boolean;
+    isNull(): boolean;
   }
 }

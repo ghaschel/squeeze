@@ -14,6 +14,7 @@ interface VinylLike {
   contents: Buffer | NodeJS.ReadableStream | null;
   isBuffer(): boolean;
   isStream(): boolean;
+  isNull(): boolean;
 }
 
 const supportedExtensions = new Set([
@@ -95,12 +96,6 @@ async function handleGulpFile(
     return file;
   }
 
-  if (file.isStream()) {
-    throw new Error(
-      "[squeezit:gulp] Streaming Vinyl contents are not supported yet."
-    );
-  }
-
   const tempWorkspace = await mkdtemp(join(tmpdir(), "squeezit-gulp-"));
 
   try {
@@ -109,6 +104,11 @@ async function handleGulpFile(
 
     if (file.path) {
       await cp(file.path, tempPath);
+    } else if (file.isStream() && file.contents) {
+      await writeFile(
+        tempPath,
+        await readStreamToBuffer(file.contents as NodeJS.ReadableStream)
+      );
     } else if (file.isBuffer() && Buffer.isBuffer(file.contents)) {
       await writeFile(tempPath, file.contents);
     } else {
@@ -148,6 +148,22 @@ function isSupportedGulpFile(file: VinylLike): boolean {
 
 function getVinylFileName(file: VinylLike): string {
   return basename(file.path || file.history?.[0] || file.relative || "file");
+}
+
+async function readStreamToBuffer(
+  stream: NodeJS.ReadableStream
+): Promise<Buffer> {
+  const chunks: Buffer[] = [];
+
+  await new Promise<void>((resolve, reject) => {
+    stream.on("data", (chunk) => {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+    });
+    stream.on("end", resolve);
+    stream.on("error", reject);
+  });
+
+  return Buffer.concat(chunks);
 }
 
 export default squeezitGulp;
