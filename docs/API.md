@@ -23,6 +23,7 @@ Integration entrypoints:
 
 ```ts
 import { squeezitGulp } from "squeezit/gulp";
+import { registerSqueezitTask } from "squeezit/grunt";
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
 import { withSqueezit } from "squeezit/next";
@@ -172,6 +173,31 @@ export function images() {
 ```
 
 The Gulp plugin runs as a Vinyl transform, uses the default compression strategy, and always enables metadata stripping. v1 supports buffered Vinyl files and path-backed Vinyl files, and rejects stream contents.
+
+### Grunt
+
+```ts
+const { registerSqueezitTask } = require("squeezit/grunt");
+
+module.exports = function (grunt) {
+  registerSqueezitTask(grunt);
+
+  grunt.initConfig({
+    squeezit: {
+      images: {
+        files: [
+          {
+            src: ["assets/**/*.{png,jpg,webp,svg}"],
+            dest: "dist/assets",
+          },
+        ],
+      },
+    },
+  });
+};
+```
+
+The Grunt integration registers a real multi-task, uses the default compression strategy, always enables metadata stripping, and respects Grunt `files` mappings for in-place or destination-output workflows.
 
 ### Vite
 

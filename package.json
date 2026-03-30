@@ -145,6 +145,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:gulp": "vitest run tests/integration/gulp.test.ts",
+    "test:grunt": "bun run build && vitest run tests/integration/grunt.test.ts",
     "test:vite": "vitest run tests/integration/vite.test.ts",
     "test:webpack": "vitest run tests/integration/webpack.test.ts",
     "test:next": "bun run build && vitest run tests/integration/next.test.ts",
@@ -176,6 +177,7 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
     "gulp": "^5.0.1",
+    "grunt": "^1.6.1",
     "lint-staged": "^16.4.0",
     "next": "^16.2.1",
     "prettier": "^3.8.1",
@@ -194,6 +196,7 @@
   },
   "peerDependencies": {
     "gulp": "^5.0.1",
+    "grunt": "^1.6.1",
     "next": "^16.2.1",
     "typescript": "^5",
     "vite": "^8.0.2",
@@ -201,6 +204,9 @@
   },
   "peerDependenciesMeta": {
     "gulp": {
+      "optional": true
+    },
+    "grunt": {
       "optional": true
     },
     "next": {

@@ -111,17 +111,17 @@ Available today:
 
 - Root JS/TS API via `import { optimizeFile, optimizeFiles, stripMetadata } from "squeezit"`
 - Gulp plugin via `import { squeezitGulp } from "squeezit/gulp"`
+- Grunt plugin via `const { registerSqueezitTask } = require("squeezit/grunt")`
 - Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 
 Planned package subpaths:
 
-- `squeezit/grunt`
 - `squeezit/rollup`
 - `squeezit/esbuild`
 
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Vite plugin, the Webpack plugin, and the Next.js wrapper.
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, and the Next.js wrapper.
 
 ### Gulp
 
@@ -135,6 +135,31 @@ exports.images = function images() {
 ```
 
 The Gulp plugin runs as a Vinyl transform, uses the default compression strategy, and always enables metadata stripping. v1 supports buffered Vinyl files and path-backed Vinyl files, and rejects streaming contents with a clear error. It does not expose or use `max` mode.
+
+### Grunt
+
+```js
+const { registerSqueezitTask } = require("squeezit/grunt");
+
+module.exports = function (grunt) {
+  registerSqueezitTask(grunt);
+
+  grunt.initConfig({
+    squeezit: {
+      images: {
+        files: [
+          {
+            src: ["assets/**/*.{png,jpg,webp,svg}"],
+            dest: "dist/assets",
+          },
+        ],
+      },
+    },
+  });
+};
+```
+
+The Grunt plugin registers a real multi-task, uses the default compression strategy, and always enables metadata stripping. v1 respects Grunt file mappings, so it can optimize files in place or write optimized output to mapped destination paths. It does not expose or use `max` mode.
 
 ### Vite
 
