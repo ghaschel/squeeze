@@ -146,6 +146,7 @@
     "test:watch": "vitest",
     "test:vite": "vitest run tests/integration/vite.test.ts",
     "test:webpack": "vitest run tests/integration/webpack.test.ts",
+    "test:next": "bun run build && vitest run tests/integration/next.test.ts",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "check:exports": "publint",
@@ -172,8 +173,11 @@
     "eslint-plugin-unused-imports": "^4.4.1",
     "husky": "^9.1.7",
     "lint-staged": "^16.4.0",
+    "next": "^16.2.1",
     "prettier": "^3.8.1",
     "publint": "^0.3.15",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
     "remark": "^15.0.1",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
@@ -184,11 +188,15 @@
     "webpack": "^5.105.4"
   },
   "peerDependencies": {
+    "next": "^16.2.1",
     "typescript": "^5",
     "vite": "^8.0.2",
     "webpack": "^5.105.4"
   },
   "peerDependenciesMeta": {
+    "next": {
+      "optional": true
+    },
     "vite": {
       "optional": true
     },

@@ -24,6 +24,7 @@ Integration entrypoints:
 ```ts
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
+import { withSqueezit } from "squeezit/next";
 ```
 
 ## Public Functions
@@ -182,3 +183,21 @@ module.exports = {
 ```
 
 The Webpack plugin runs after assets are emitted to `output.path`, optimizes the written image files from that directory, uses the default compression strategy, and always enables metadata stripping.
+
+### Next.js
+
+```ts
+import { withSqueezit } from "squeezit/next";
+
+const nextConfig = withSqueezit({
+  webpack(config) {
+    return config;
+  },
+});
+
+export default nextConfig;
+```
+
+The Next.js wrapper delegates to the Webpack integration internally. It augments the existing `webpack(config, context)` hook in `next.config.js` or `next.config.ts`, preserves any existing user webpack customization, uses the default compression strategy, and always enables metadata stripping.
+
+Turbopack is not supported by this wrapper yet. Documentation can mention it as coming soon, but the implementation is webpack-only for now.

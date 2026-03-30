@@ -112,16 +112,16 @@ Available today:
 - Root JS/TS API via `import { optimizeFile, optimizeFiles, stripMetadata } from "squeezit"`
 - Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
+- Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 
 Planned package subpaths:
 
 - `squeezit/gulp`
 - `squeezit/grunt`
 - `squeezit/rollup`
-- `squeezit/next`
 - `squeezit/esbuild`
 
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Vite plugin, and the Webpack plugin.
+The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Vite plugin, the Webpack plugin, and the Next.js wrapper.
 
 ### Vite
 
@@ -147,6 +147,22 @@ module.exports = {
 ```
 
 The Webpack plugin runs after assets are written to the configured output directory, optimizes emitted image files from that directory, uses the default compression strategy, and always enables metadata stripping. It does not expose or use `max` mode.
+
+### Next.js
+
+```js
+const { withSqueezit } = require("squeezit/next");
+
+module.exports = withSqueezit({
+  webpack(config) {
+    return config;
+  },
+});
+```
+
+The Next.js wrapper augments webpack-based Next builds by injecting the `squeezit` Webpack plugin through `next.config.js`/`next.config.ts`. It uses the default compression strategy, always enables metadata stripping, and does not expose or use `max` mode.
+
+Turbopack support is not included in this wrapper yet. It is planned and coming soon, but this integration currently targets Next’s webpack build pipeline only.
 
 The fixture-value helper and JS/TS API report `filePath` and `outputPath` relative to the effective `cwd`, not as absolute machine-specific paths.
 
