@@ -19,6 +19,13 @@ import {
 } from "squeezit";
 ```
 
+Integration entrypoints:
+
+```ts
+import { squeezitVite } from "squeezit/vite";
+import { squeezitWebpack } from "squeezit/webpack";
+```
+
 ## Public Functions
 
 ### `optimizeFile(input, options?)`
@@ -148,3 +155,30 @@ bun run fixture-values -- --mode max tests/fixtures/formats/png/sample.png tests
 ```
 
 Use that output to replace the placeholder expected sizes and statuses in the fixture manifest used by the integration tests.
+
+## Bundler Plugins
+
+### Vite
+
+```ts
+import { defineConfig } from "vite";
+import { squeezitVite } from "squeezit/vite";
+
+export default defineConfig({
+  plugins: [squeezitVite()],
+});
+```
+
+The Vite plugin runs only for production builds, optimizes emitted files from the output directory, uses the default compression strategy, and always enables metadata stripping.
+
+### Webpack
+
+```ts
+const { squeezitWebpack } = require("squeezit/webpack");
+
+module.exports = {
+  plugins: [squeezitWebpack()],
+};
+```
+
+The Webpack plugin runs after assets are emitted to `output.path`, optimizes the written image files from that directory, uses the default compression strategy, and always enables metadata stripping.

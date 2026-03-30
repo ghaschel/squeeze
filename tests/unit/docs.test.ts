@@ -5,6 +5,7 @@ import { describe, expect, test } from "vitest";
 
 import * as api from "../../src/api";
 import { squeezitVite } from "../../src/integrations/vite";
+import { squeezitWebpack } from "../../src/integrations/webpack";
 
 describe("documentation coverage", () => {
   test("documents integrations in the readme", async () => {
@@ -13,6 +14,7 @@ describe("documentation coverage", () => {
     expect(readme).toContain("## Integrations");
     expect(readme).toContain("squeezit/gulp");
     expect(readme).toContain("squeezit/vite");
+    expect(readme).toContain("squeezit/webpack");
   });
 
   test("contains dedicated API documentation", async () => {
@@ -36,6 +38,10 @@ describe("documentation coverage", () => {
 
   test("exports the vite integration", () => {
     expect(typeof squeezitVite).toBe("function");
+  });
+
+  test("exports the webpack integration", () => {
+    expect(typeof squeezitWebpack).toBe("function");
   });
 
   test("declares the root and planned integration exports in package.json", async () => {

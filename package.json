@@ -145,6 +145,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:vite": "vitest run tests/integration/vite.test.ts",
+    "test:webpack": "vitest run tests/integration/webpack.test.ts",
     "test:coverage": "vitest run --coverage",
     "typecheck": "tsc --noEmit",
     "check:exports": "publint",
@@ -179,14 +180,19 @@
     "tsup": "^8.5.0",
     "typescript-eslint": "^8.57.1",
     "vite": "^8.0.2",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.7",
+    "webpack": "^5.105.4"
   },
   "peerDependencies": {
     "typescript": "^5",
-    "vite": "^8.0.2"
+    "vite": "^8.0.2",
+    "webpack": "^5.105.4"
   },
   "peerDependenciesMeta": {
     "vite": {
+      "optional": true
+    },
+    "webpack": {
       "optional": true
     }
   },
