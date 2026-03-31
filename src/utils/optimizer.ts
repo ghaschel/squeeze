@@ -39,6 +39,7 @@ const RAW_EXTENSIONS = new Set([
 const EXTENSION_FORMAT_HINTS: Partial<Record<string, SupportedFormat>> = {
   ".apng": "apng",
   ".bmp": "bmp",
+  ".cur": "cur",
   ".gif": "gif",
   ".heic": "heif",
   ".heif": "heif",
@@ -84,6 +85,8 @@ interface IcoEntry {
   width: number;
   height: number;
   bitDepth?: number;
+  hotspotX?: number;
+  hotspotY?: number;
 }
 
 export interface BmpHeaderInfo {
@@ -174,6 +177,14 @@ async function optimizeSingleImage(
             input.absolutePath,
             "[SKIP]",
             "metadata-only writing is not supported for ICO"
+          );
+        }
+
+        if (detected.format === "cur") {
+          return skippedResult(
+            input.absolutePath,
+            "[SKIP]",
+            "metadata-only writing is not supported for CUR"
           );
         }
 
@@ -332,6 +343,10 @@ export async function detectImage(
   let format =
     MIME_TO_FORMAT[mimeType] ?? EXTENSION_FORMAT_HINTS[rawExtension] ?? null;
 
+  if (rawExtension === ".cur") {
+    format = "cur";
+  }
+
   if (!format) {
     return null;
   }
@@ -393,6 +408,8 @@ async function runPipeline(params: {
       return optimizeJxl(workingInputPath, workDir, options);
     case "ico":
       return optimizeIco(workingInputPath, workDir, options);
+    case "cur":
+      return optimizeCur(workingInputPath, workDir, options);
     case "raw":
       return optimizeRaw(originalPath, workingInputPath, workDir, options);
   }
@@ -780,18 +797,39 @@ async function optimizeIco(
   workDir: string,
   options: CoreOptimizationOptions
 ): Promise<PipelineResult> {
+  return optimizeIconContainer(inputPath, workDir, options, "ico");
+}
+
+async function optimizeCur(
+  inputPath: string,
+  workDir: string,
+  options: CoreOptimizationOptions
+): Promise<PipelineResult> {
+  return optimizeIconContainer(inputPath, workDir, options, "cur");
+}
+
+async function optimizeIconContainer(
+  inputPath: string,
+  workDir: string,
+  options: CoreOptimizationOptions,
+  format: "ico" | "cur"
+): Promise<PipelineResult> {
   try {
-    const entries = await listIcoEntries(inputPath);
+    const entries = await listIconContainerEntries(inputPath, format);
 
     if (entries.length === 0) {
-      throw new SkippableOptimizationError("unsupported or malformed ICO");
+      throw new SkippableOptimizationError(
+        format === "cur"
+          ? "unsupported or malformed CUR"
+          : "unsupported or malformed ICO"
+      );
     }
 
     const rebuiltEntries: string[] = [];
 
     for (const entry of entries) {
-      const extractDirectory = join(workDir, `ico-entry-${entry.index}`);
-      const extractedPath = await extractIcoEntry(
+      const extractDirectory = join(workDir, `${format}-entry-${entry.index}`);
+      const extractedPath = await extractIconContainerEntry(
         inputPath,
         entry.index,
         extractDirectory
@@ -800,38 +838,49 @@ async function optimizeIco(
 
       const optimizedPath = await optimizeEmbeddedIcoFrame(
         extractedPath,
-        join(workDir, `ico-frame-${entry.index}`),
+        join(workDir, `${format}-frame-${entry.index}`),
         options
       );
 
       rebuiltEntries.push(optimizedPath);
     }
 
-    const optimizedPath = join(workDir, "optimized.ico");
-    await runCheckedCommand("icotool", [
-      "-c",
-      "-o",
-      optimizedPath,
-      ...rebuiltEntries.map((filePath) => `--raw=${filePath}`),
-    ]);
+    const optimizedPath = join(workDir, `optimized.${format}`);
+    await runCheckedCommand(
+      "icotool",
+      buildIconContainerCreateArgs(
+        format,
+        optimizedPath,
+        entries,
+        rebuiltEntries
+      )
+    );
 
-    const rebuiltEntriesInfo = await listIcoEntries(optimizedPath);
-    if (!hasMatchingIcoDimensions(entries, rebuiltEntriesInfo)) {
+    const rebuiltEntriesInfo = await listIconContainerEntries(
+      optimizedPath,
+      format
+    );
+    if (!hasMatchingIconContainerEntries(entries, rebuiltEntriesInfo, format)) {
       throw new SkippableOptimizationError(
-        "rebuilt icon changed entry dimensions"
+        format === "cur"
+          ? "rebuilt cursor changed entry dimensions or hotspots"
+          : "rebuilt icon changed entry dimensions"
       );
     }
 
-    return { outputPath: optimizedPath, label: "[ICO]" };
+    return {
+      outputPath: optimizedPath,
+      label: format === "cur" ? "[CUR]" : "[ICO]",
+    };
   } catch (error) {
     if (error instanceof SkippableOptimizationError) {
       throw error;
     }
 
     const message = error instanceof Error ? error.message : String(error);
-    const icoMessage = toSkippableIcoMessage(message);
-    if (icoMessage) {
-      throw new SkippableOptimizationError(icoMessage);
+    const containerMessage = toSkippableIconContainerMessage(message, format);
+    if (containerMessage) {
+      throw new SkippableOptimizationError(containerMessage);
     }
 
     throw error;
@@ -1225,12 +1274,19 @@ async function selectSmallestCandidate(
   return selected;
 }
 
-async function listIcoEntries(filePath: string): Promise<IcoEntry[]> {
-  const result = await runCheckedCommand("icotool", ["-l", filePath]);
-  return parseIcoEntries(result.stdout);
+async function listIconContainerEntries(
+  filePath: string,
+  format: "ico" | "cur"
+): Promise<IcoEntry[]> {
+  const result = await runCheckedCommand("icotool", [
+    "-l",
+    format === "cur" ? "--cursor" : "--icon",
+    filePath,
+  ]);
+  return parseIconContainerEntries(result.stdout);
 }
 
-async function extractIcoEntry(
+async function extractIconContainerEntry(
   filePath: string,
   index: number,
   outputDirectory: string
@@ -1245,30 +1301,34 @@ async function extractIcoEntry(
     filePath,
   ]);
 
-  const extractedPath = await findExtractedIcoImage(outputDirectory);
+  const extractedPath = await findExtractedIconContainerImage(outputDirectory);
   if (result.exitCode === 0) {
     return extractedPath;
   }
 
-  if (shouldAcceptIcoExtraction(result.all)) {
+  if (shouldAcceptIconContainerExtraction(result.all)) {
     return extractedPath;
   }
 
   throw new Error(result.all.trim() || `Failed to extract ICO entry ${index}`);
 }
 
-async function findExtractedIcoImage(directory: string): Promise<string> {
+async function findExtractedIconContainerImage(
+  directory: string
+): Promise<string> {
   const entries = (await readdir(directory)).sort();
   const match = entries.find((entry) => entry.toLowerCase().endsWith(".png"));
 
   if (!match) {
-    throw new Error(`No PNG image extracted from ICO entry in ${directory}`);
+    throw new Error(
+      `No PNG image extracted from icon container entry in ${directory}`
+    );
   }
 
   return join(directory, match);
 }
 
-export function parseIcoEntries(output: string): IcoEntry[] {
+export function parseIconContainerEntries(output: string): IcoEntry[] {
   const entries: IcoEntry[] = [];
 
   for (const line of output.split(/\r?\n/).map((value) => value.trim())) {
@@ -1280,6 +1340,8 @@ export function parseIcoEntries(output: string): IcoEntry[] {
     const width = extractNumber(line, "width");
     const height = extractNumber(line, "height");
     const bitDepth = extractOptionalNumber(line, "bit-depth");
+    const hotspotX = extractOptionalNumber(line, "hotspot-x");
+    const hotspotY = extractOptionalNumber(line, "hotspot-y");
 
     if (index === null || width === null || height === null) {
       continue;
@@ -1290,15 +1352,22 @@ export function parseIcoEntries(output: string): IcoEntry[] {
       width,
       height,
       bitDepth: bitDepth ?? undefined,
+      hotspotX: hotspotX ?? undefined,
+      hotspotY: hotspotY ?? undefined,
     });
   }
 
   return entries;
 }
 
-export function hasMatchingIcoDimensions(
+export function parseIcoEntries(output: string): IcoEntry[] {
+  return parseIconContainerEntries(output);
+}
+
+export function hasMatchingIconContainerEntries(
   expected: IcoEntry[],
-  actual: IcoEntry[]
+  actual: IcoEntry[],
+  format: "ico" | "cur"
 ): boolean {
   if (expected.length !== actual.length) {
     return false;
@@ -1306,12 +1375,62 @@ export function hasMatchingIcoDimensions(
 
   return expected.every((entry, index) => {
     const rebuilt = actual[index];
-    return (
+    const hasMatchingDimensions =
       rebuilt !== undefined &&
       rebuilt.width === entry.width &&
-      rebuilt.height === entry.height
+      rebuilt.height === entry.height;
+
+    if (!hasMatchingDimensions) {
+      return false;
+    }
+
+    if (format === "ico") {
+      return true;
+    }
+
+    return (
+      rebuilt.hotspotX === entry.hotspotX && rebuilt.hotspotY === entry.hotspotY
     );
   });
+}
+
+export function hasMatchingIcoDimensions(
+  expected: IcoEntry[],
+  actual: IcoEntry[]
+): boolean {
+  return hasMatchingIconContainerEntries(expected, actual, "ico");
+}
+
+function buildIconContainerCreateArgs(
+  format: "ico" | "cur",
+  outputPath: string,
+  entries: IcoEntry[],
+  rebuiltEntries: string[]
+): string[] {
+  const args = ["-c"];
+
+  if (format === "cur") {
+    args.push("--cursor");
+  }
+
+  args.push("-o", outputPath);
+
+  rebuiltEntries.forEach((filePath, index) => {
+    const entry = entries[index];
+    if (format === "cur" && entry) {
+      if (entry.hotspotX !== undefined) {
+        args.push(`--hotspot-x=${entry.hotspotX}`);
+      }
+
+      if (entry.hotspotY !== undefined) {
+        args.push(`--hotspot-y=${entry.hotspotY}`);
+      }
+    }
+
+    args.push(`--raw=${filePath}`);
+  });
+
+  return args;
 }
 
 export function parseBmpHeader(buffer: Uint8Array): BmpHeaderInfo | null {
@@ -1390,26 +1509,35 @@ async function filesAreIdentical(
   return left.equals(right);
 }
 
-function toSkippableIcoMessage(message: string): string | null {
+function toSkippableIconContainerMessage(
+  message: string,
+  format: "ico" | "cur"
+): string | null {
   const normalized = message.toLowerCase();
   const malformedMarkers = [
     "clr_important field in bitmap should be zero",
     "incorrect total size of bitmap",
     "bytes of garbage",
     "no png image extracted from ico entry",
+    "no png image extracted from icon container entry",
   ];
 
   if (malformedMarkers.some((marker) => normalized.includes(marker))) {
-    return "unsupported or malformed ICO";
+    return format === "cur"
+      ? "unsupported or malformed CUR"
+      : "unsupported or malformed ICO";
   }
 
   return null;
 }
 
-export function shouldAcceptIcoExtraction(message: string): boolean {
+export function shouldAcceptIconContainerExtraction(message: string): boolean {
   const normalized = message.toLowerCase();
 
-  if (normalized.includes("no png image extracted from ico entry")) {
+  if (
+    normalized.includes("no png image extracted from ico entry") ||
+    normalized.includes("no png image extracted from icon container entry")
+  ) {
     return false;
   }
 
@@ -1418,6 +1546,10 @@ export function shouldAcceptIcoExtraction(message: string): boolean {
     "incorrect total size of bitmap",
     "bytes of garbage",
   ].some((marker) => normalized.includes(marker));
+}
+
+export function shouldAcceptIcoExtraction(message: string): boolean {
+  return shouldAcceptIconContainerExtraction(message);
 }
 
 export async function applyReplacement(params: {

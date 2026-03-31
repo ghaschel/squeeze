@@ -9,7 +9,10 @@ import {
   createGruntOptimizationOptions,
   registerSqueezitTask,
 } from "../../src/integrations/grunt";
-import { representativeFixtures } from "../helpers/fixture-manifest";
+import {
+  hasRepresentativeFixture,
+  representativeFixtures,
+} from "../helpers/fixture-manifest";
 import { cleanupWorkspace, createTempWorkspace } from "../helpers/temp";
 
 const workspaces: string[] = [];
@@ -24,10 +27,12 @@ const gruntFixtureKeys = [
   "avif",
   "bmp",
   "ico",
+  "cur",
   "jxl",
 ] as const;
 const rawFixtureKeys = ["arw", "cr2", "nef", "orf", "raf"] as const;
-const gruntAssetPattern = "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,jxl}";
+const gruntAssetPattern =
+  "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}";
 
 afterEach(async () => {
   while (workspaces.length > 0) {
@@ -72,7 +77,9 @@ describe("grunt integration", () => {
   test("uses the explicit web-allowed fixture set and excludes raw fixtures", () => {
     const fixtures = getGruntFixtures();
 
-    expect(fixtures.map((fixture) => fixture.key)).toEqual(gruntFixtureKeys);
+    expect(fixtures.map((fixture) => fixture.key)).toEqual(
+      gruntFixtureKeys.filter((key) => hasRepresentativeFixture(key))
+    );
     expect(
       fixtures.some((fixture) =>
         rawFixtureKeys.includes(fixture.key as (typeof rawFixtureKeys)[number])
@@ -184,19 +191,21 @@ async function totalAssetSize(paths: string[]): Promise<number> {
 }
 
 function getGruntFixtures(): Array<{
-  key: (typeof gruntFixtureKeys)[number];
+  key: string;
   sourcePath: string;
   fileName: string;
 }> {
-  return gruntFixtureKeys.map((key) => {
-    const sourcePath = representativeFixtures[key];
+  return gruntFixtureKeys
+    .filter((key) => hasRepresentativeFixture(key))
+    .map((key) => {
+      const sourcePath = representativeFixtures[key];
 
-    return {
-      key,
-      sourcePath,
-      fileName: `${key}${extname(sourcePath)}`,
-    };
-  });
+      return {
+        key,
+        sourcePath,
+        fileName: `${key}${extname(sourcePath)}`,
+      };
+    });
 }
 
 function buildGruntRunnerSource(fileNames: string[]): string {

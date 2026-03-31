@@ -251,7 +251,7 @@ squeezit [patterns...] [options]
 - Pass directories like `assets`
 - If no file parameter is provided, `squeezit` scans supported image files in the current directory
 - Scanning is non-recursive by default; use `-r, --recursive` to traverse subdirectories
-- Discovery includes APNG (`.apng`), JPEG XL (`.jxl`), and ICO (`.ico`) files
+- Discovery includes APNG (`.apng`), JPEG XL (`.jxl`), ICO (`.ico`), and CUR (`.cur`) files
 
 ### Options
 
@@ -324,6 +324,12 @@ Modernize an ICO while preserving its icon sizes:
 squeezit app.ico
 ```
 
+Modernize a cursor container while preserving entry sizes and hotspots:
+
+```bash
+squeezit pointer.cur
+```
+
 Update the global installation explicitly with npm:
 
 ```bash
@@ -344,7 +350,7 @@ Squeezit currently matches these file extensions during discovery:
 - `avif`
 - `bmp`
 - `jxl`
-- `ico`
+- `ico`, `cur`
 - `cr2`, `nef`, `arw`, `raf`, `orf`, `rw2`
 
 Internally, compression behavior is determined with MIME detection where applicable, not only by extension.
@@ -365,6 +371,7 @@ Squeezit currently supports these image format families:
 - `BMP` (`.bmp`): lossless RLE recompression for source 4-bit and 8-bit BMPs only; higher-bit BMPs are skipped
 - `JPEG XL` (`.jxl`): lossless re-encode, with a faster default pass and multi-effort candidate comparison in `--max`
 - `ICO` (`.ico`): modernized by extracting embedded icon images, optimizing them, and rebuilding the icon container while preserving the original entry dimensions; if the rebuilt icon changes the dimension set, it is skipped
+- `CUR` (`.cur`): modernized by extracting embedded cursor images, optimizing them, and rebuilding the cursor container while preserving the original entry dimensions and hotspot coordinates; if the rebuilt cursor changes either, it is skipped
 - `RAW camera files` (`.cr2`, `.nef`, `.arw`, `.raf`, `.orf`, `.rw2`): metadata stripping in `--exif` mode, optional RAW-to-DNG conversion in `--max` mode using the smallest lossless DNG settings
 
 Notes:
@@ -374,7 +381,9 @@ Notes:
 - `--max` always strips metadata in addition to raising encoder effort across the supported recompression pipelines
 - `--max` forces the replacement threshold to `0`, so any positive lossless reduction is accepted
 - ICO support is focused on modernizing containers while preserving icon sizes, not preserving original legacy BMP-style encoding byte-for-byte
+- CUR support is focused on modernizing containers while preserving entry sizes and cursor hotspots, not preserving original legacy BMP-style encoding byte-for-byte
 - BMP metadata-only writing is not supported; BMP optimization only rewrites eligible indexed BMP image data
+- ICO and CUR metadata-only writing are not supported
 - RAW files are special-case inputs and only convert to `.dng` in `--max` mode
 - RAW `--max` conversion now targets the smallest lossless DNG by disabling embedded RAW, preview, and thumbnail payloads; `.rw2` inputs also try the available lossless JPEG predictor variants and keep the smallest result
 

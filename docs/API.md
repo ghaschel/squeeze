@@ -121,6 +121,8 @@ For JPEG XL inputs, `max` benchmarks multiple lossless `cjxl` effort levels, inc
 
 For ICO inputs, optimization is skipped if rebuilding the icon changes the original entry dimensions.
 
+For CUR inputs (`.cur`), optimization is skipped if rebuilding the cursor changes the original entry dimensions or hotspot coordinates. Metadata-only writing is not supported for CUR, matching the current ICO posture.
+
 For BMP inputs, optimization only attempts lossless RLE rewriting when the source BMP is already 4-bit or 8-bit. Higher-bit BMPs are skipped rather than quantized. Metadata-only writing is not supported for BMP.
 
 ## Result Shape

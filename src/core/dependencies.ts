@@ -192,6 +192,7 @@ const FORMAT_DEPENDENCIES: Record<string, DependencyName[]> = {
   bmp: ["magick"],
   jxl: ["cjxl"],
   ico: ["icotool", "oxipng", "exiftool"],
+  cur: ["icotool", "oxipng", "exiftool"],
   raw: [],
 };
 
@@ -232,7 +233,7 @@ export function collectRequiredDependencies(
         continue;
       }
 
-      if (format === "ico") {
+      if (format === "ico" || format === "cur") {
         continue;
       }
 
@@ -396,6 +397,8 @@ function formatFamilyFromExtension(filePath: string): string | null {
       return "jxl";
     case ".ico":
       return "ico";
+    case ".cur":
+      return "cur";
     default:
       return RAW_EXTENSIONS.has(extension) ? "raw" : null;
   }

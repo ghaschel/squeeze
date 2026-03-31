@@ -10,7 +10,10 @@ import {
   createViteOptimizationOptions,
   squeezitVite,
 } from "../../src/integrations/vite";
-import { representativeFixtures } from "../helpers/fixture-manifest";
+import {
+  hasRepresentativeFixture,
+  representativeFixtures,
+} from "../helpers/fixture-manifest";
 import { cleanupWorkspace, createTempWorkspace } from "../helpers/temp";
 
 const workspaces: string[] = [];
@@ -25,12 +28,14 @@ const viteFixtureKeys = [
   "avif",
   "bmp",
   "ico",
+  "cur",
   "jxl",
 ] as const;
 const rawFixtureKeys = ["arw", "cr2", "nef", "orf", "raf"] as const;
 const viteAssetExtensionPattern =
-  ".{png,gif,webp,svg,heif,heic,avif,bmp,ico,jxl}";
-const viteAssetsInclude = /\.(png|gif|webp|svg|heif|heic|avif|bmp|ico|jxl)$/i;
+  ".{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}";
+const viteAssetsInclude =
+  /\.(png|gif|webp|svg|heif|heic|avif|bmp|ico|cur|jxl)$/i;
 
 afterEach(async () => {
   while (workspaces.length > 0) {
@@ -57,7 +62,9 @@ describe("vite integration", () => {
   test("uses the explicit web-allowed fixture set and excludes raw fixtures", () => {
     const fixtures = getViteFixtures();
 
-    expect(fixtures.map((fixture) => fixture.key)).toEqual(viteFixtureKeys);
+    expect(fixtures.map((fixture) => fixture.key)).toEqual(
+      viteFixtureKeys.filter((key) => hasRepresentativeFixture(key))
+    );
     expect(
       fixtures.some((fixture) =>
         rawFixtureKeys.includes(fixture.key as (typeof rawFixtureKeys)[number])
@@ -201,20 +208,22 @@ async function totalAssetSize(paths: string[]): Promise<number> {
 }
 
 function getViteFixtures(): Array<{
-  key: (typeof viteFixtureKeys)[number];
+  key: string;
   sourcePath: string;
   fileName: string;
 }> {
-  return viteFixtureKeys.map((key) => {
-    const sourcePath = representativeFixtures[key];
-    const fileName = `${key}${extname(sourcePath) || extname(basename(sourcePath))}`;
+  return viteFixtureKeys
+    .filter((key) => hasRepresentativeFixture(key))
+    .map((key) => {
+      const sourcePath = representativeFixtures[key];
+      const fileName = `${key}${extname(sourcePath) || extname(basename(sourcePath))}`;
 
-    return {
-      key,
-      sourcePath,
-      fileName,
-    };
-  });
+      return {
+        key,
+        sourcePath,
+        fileName,
+      };
+    });
 }
 
 function buildMainSource(

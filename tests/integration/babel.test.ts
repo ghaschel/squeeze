@@ -4,7 +4,10 @@ import { join, resolve } from "node:path";
 import { transformAsync } from "@babel/core";
 import { afterEach, describe, expect, test } from "vitest";
 
-import { representativeFixtures } from "../helpers/fixture-manifest";
+import {
+  hasRepresentativeFixture,
+  representativeFixtures,
+} from "../helpers/fixture-manifest";
 import { cleanupWorkspace, createTempWorkspace } from "../helpers/temp";
 
 const workspaces: string[] = [];
@@ -35,6 +38,9 @@ describe("babel integration", () => {
     expect(code).toContain("hero.png");
     expect(code).toContain("poster.webp");
     expect(code).toContain("link.svg");
+    if (hasRepresentativeFixture("cur")) {
+      expect(code).toContain("cursor.cur");
+    }
 
     const generatedPng = resolve(
       workspace,
@@ -53,6 +59,16 @@ describe("babel integration", () => {
     expect((await stat(generatedWebp)).size).toBeLessThan(
       (await stat(join(workspace, "src/assets/poster.webp"))).size
     );
+
+    if (hasRepresentativeFixture("cur")) {
+      const generatedCur = resolve(
+        workspace,
+        ".squeezit/babel-assets",
+        "src/assets/cursor.cur"
+      );
+
+      expect(await stat(generatedCur)).toBeDefined();
+    }
   });
 
   test("is a no-op outside production by default", async () => {
@@ -118,10 +134,20 @@ async function scaffoldBabelProject(workspace: string): Promise<void> {
     cp(representativeFixtures.raf, join(workspace, "src/assets/raw.raf")),
   ]);
 
+  if (hasRepresentativeFixture("cur")) {
+    await cp(
+      representativeFixtures.cur,
+      join(workspace, "src/assets/cursor.cur")
+    );
+  }
+
   await writeFile(
     join(workspace, "src", "fixture.tsx"),
     [
       'import hero from "./assets/hero.png";',
+      ...(hasRepresentativeFixture("cur")
+        ? ['import cursorAsset from "./assets/cursor.cur";']
+        : []),
       'import rawAsset from "./assets/raw.raf";',
       'const poster = require("./assets/poster.webp");',
       "",
@@ -133,11 +159,15 @@ async function scaffoldBabelProject(workspace: string): Promise<void> {
       '      <img src="./assets/hero.png" />',
       '      <video poster="./assets/poster.webp" />',
       '      <a href="./assets/link.svg">link</a>',
+      ...(hasRepresentativeFixture("cur")
+        ? ['      <img src="./assets/cursor.cur" />']
+        : []),
       '      <img srcSet="./assets/hero.png 1x, ./assets/poster.webp 2x" />',
       "      <img src={dynamicSrc} />",
       '      <img src="https://example.com/image.png" />',
       '      <img src="data:image/png;base64,AAAA" />',
       "      {hero}",
+      ...(hasRepresentativeFixture("cur") ? ["      {cursorAsset}"] : []),
       "      {poster}",
       "      {rawAsset}",
       "    </div>",

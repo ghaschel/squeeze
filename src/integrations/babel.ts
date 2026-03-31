@@ -34,6 +34,7 @@ const supportedExtensions = new Set([
   ".bmp",
   ".jxl",
   ".ico",
+  ".cur",
 ]);
 
 const rawExtensions = new Set([".cr2", ".nef", ".arw", ".raf", ".orf", ".rw2"]);

@@ -154,6 +154,7 @@
     "postinstall": "node ./postinstall.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:api": "bun run build && vitest run tests/integration/api.test.ts",
     "test:cli": "vitest run tests/unit/cli.test.ts",
     "test:babel": "bun run build && vitest run tests/integration/babel.test.ts",
     "test:gulp": "vitest run tests/integration/gulp.test.ts",

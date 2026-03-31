@@ -9,7 +9,10 @@ import {
   createGulpOptimizationOptions,
   squeezitGulp,
 } from "../../src/integrations/gulp";
-import { representativeFixtures } from "../helpers/fixture-manifest";
+import {
+  hasRepresentativeFixture,
+  representativeFixtures,
+} from "../helpers/fixture-manifest";
 import { cleanupWorkspace, createTempWorkspace } from "../helpers/temp";
 
 const workspaces: string[] = [];
@@ -24,10 +27,12 @@ const gulpFixtureKeys = [
   "avif",
   "bmp",
   "ico",
+  "cur",
   "jxl",
 ] as const;
 const rawFixtureKeys = ["arw", "cr2", "nef", "orf", "raf"] as const;
-const gulpAssetPattern = "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,jxl}";
+const gulpAssetPattern =
+  "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}";
 
 afterEach(async () => {
   while (workspaces.length > 0) {
@@ -54,7 +59,9 @@ describe("gulp integration", () => {
   test("uses the explicit web-allowed fixture set and excludes raw fixtures", () => {
     const fixtures = getGulpFixtures();
 
-    expect(fixtures.map((fixture) => fixture.key)).toEqual(gulpFixtureKeys);
+    expect(fixtures.map((fixture) => fixture.key)).toEqual(
+      gulpFixtureKeys.filter((key) => hasRepresentativeFixture(key))
+    );
     expect(
       fixtures.some((fixture) =>
         rawFixtureKeys.includes(fixture.key as (typeof rawFixtureKeys)[number])
@@ -248,17 +255,19 @@ async function totalAssetSize(paths: string[]): Promise<number> {
 }
 
 function getGulpFixtures(): Array<{
-  key: (typeof gulpFixtureKeys)[number];
+  key: string;
   sourcePath: string;
   fileName: string;
 }> {
-  return gulpFixtureKeys.map((key) => {
-    const sourcePath = representativeFixtures[key];
+  return gulpFixtureKeys
+    .filter((key) => hasRepresentativeFixture(key))
+    .map((key) => {
+      const sourcePath = representativeFixtures[key];
 
-    return {
-      key,
-      sourcePath,
-      fileName: `${key}${extname(sourcePath)}`,
-    };
-  });
+      return {
+        key,
+        sourcePath,
+        fileName: `${key}${extname(sourcePath)}`,
+      };
+    });
 }

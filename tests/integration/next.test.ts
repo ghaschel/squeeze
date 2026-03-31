@@ -8,7 +8,10 @@ import { afterEach, describe, expect, test } from "vitest";
 import webpack from "webpack";
 
 import { withSqueezit } from "../../src/integrations/next";
-import { representativeFixtures } from "../helpers/fixture-manifest";
+import {
+  hasRepresentativeFixture,
+  representativeFixtures,
+} from "../helpers/fixture-manifest";
 import { cleanupWorkspace, createTempWorkspace } from "../helpers/temp";
 
 const workspaces: string[] = [];
@@ -23,10 +26,12 @@ const nextFixtureKeys = [
   "avif",
   "bmp",
   "ico",
+  "cur",
   "jxl",
 ] as const;
 const rawFixtureKeys = ["arw", "cr2", "nef", "orf", "raf"] as const;
-const nextAssetPattern = "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,jxl}";
+const nextAssetPattern =
+  "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}";
 
 afterEach(async () => {
   while (workspaces.length > 0) {
@@ -84,7 +89,9 @@ describe("next integration", () => {
   test("uses the explicit web-allowed fixture set and excludes raw fixtures", () => {
     const fixtures = getNextFixtures();
 
-    expect(fixtures.map((fixture) => fixture.key)).toEqual(nextFixtureKeys);
+    expect(fixtures.map((fixture) => fixture.key)).toEqual(
+      nextFixtureKeys.filter((key) => hasRepresentativeFixture(key))
+    );
     expect(
       fixtures.some((fixture) =>
         rawFixtureKeys.includes(fixture.key as (typeof rawFixtureKeys)[number])
@@ -225,19 +232,21 @@ async function totalAssetSize(paths: string[]): Promise<number> {
 }
 
 function getNextFixtures(): Array<{
-  key: (typeof nextFixtureKeys)[number];
+  key: string;
   sourcePath: string;
   fileName: string;
 }> {
-  return nextFixtureKeys.map((key) => {
-    const sourcePath = representativeFixtures[key];
+  return nextFixtureKeys
+    .filter((key) => hasRepresentativeFixture(key))
+    .map((key) => {
+      const sourcePath = representativeFixtures[key];
 
-    return {
-      key,
-      sourcePath,
-      fileName: `${key}${extname(sourcePath)}`,
-    };
-  });
+      return {
+        key,
+        sourcePath,
+        fileName: `${key}${extname(sourcePath)}`,
+      };
+    });
 }
 
 function buildPageSource(
@@ -283,7 +292,7 @@ function buildNextConfigSource(
     "  },",
     "  webpack(config) {",
     "    config.module.rules.push({",
-    "      test: /\\.(png|gif|webp|svg|heif|heic|avif|bmp|ico|jxl)$/i,",
+    "      test: /\\.(png|gif|webp|svg|heif|heic|avif|bmp|ico|cur|jxl)$/i,",
     "      resourceQuery: /url/,",
     "      type: 'asset/resource',",
     "    });",

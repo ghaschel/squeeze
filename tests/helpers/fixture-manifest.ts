@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { join } from "node:path";
 
 import type { ApiOptimizationMode } from "../../src/types";
@@ -333,6 +334,30 @@ export const formatFixtures: FormatFixture[] = [
     },
   },
   {
+    format: "cur",
+    relativePath: "cur/sample.cur",
+    expectations: {
+      default: {
+        status: "optimized",
+        originalSize: 4286,
+        optimizedSize: 302,
+        savedBytes: 3984,
+      },
+      exif: {
+        status: "skipped",
+        originalSize: 0,
+        optimizedSize: 0,
+        savedBytes: 0,
+      },
+      max: {
+        status: "optimized",
+        originalSize: 4286,
+        optimizedSize: 302,
+        savedBytes: 3984,
+      },
+    },
+  },
+  {
     format: "arw",
     relativePath: "raw/sample.arw",
     expectations: {
@@ -521,6 +546,7 @@ export const representativeFixtures = {
   bmp: join(fixtureRoot, "bmp", "sample.bmp"),
   jxl: join(fixtureRoot, "jxl", "sample.jxl"),
   ico: join(fixtureRoot, "ico", "sample.ico"),
+  cur: join(fixtureRoot, "cur", "sample.cur"),
   arw: join(fixtureRoot, "raw", "sample.arw"),
   cr2: join(fixtureRoot, "raw", "sample.cr2"),
   nef: join(fixtureRoot, "raw", "sample.nef"),
@@ -530,6 +556,12 @@ export const representativeFixtures = {
   tif: join(fixtureRoot, "tiff", "sample.tif"),
   tiff: join(fixtureRoot, "tiff", "sample.tiff"),
 };
+
+export function hasRepresentativeFixture(
+  key: keyof typeof representativeFixtures
+): boolean {
+  return existsSync(representativeFixtures[key]);
+}
 
 function makeExpectation(
   status: FixtureExpectation["status"]
@@ -542,7 +574,7 @@ function makeExpectation(
   };
 }
 
-function _placeholderExpectations(
+export function placeholderExpectations(
   statuses: Partial<
     Record<ApiOptimizationMode, FixtureExpectation["status"]>
   > = {}
@@ -552,4 +584,14 @@ function _placeholderExpectations(
     exif: makeExpectation(statuses.exif ?? "optimized"),
     max: makeExpectation(statuses.max ?? "optimized"),
   };
+}
+
+export function isPlaceholderExpectation(
+  expectation: FixtureExpectation
+): boolean {
+  return (
+    expectation.originalSize === PLACEHOLDER_SIZE &&
+    expectation.optimizedSize === PLACEHOLDER_SIZE &&
+    expectation.savedBytes === PLACEHOLDER_SIZE
+  );
 }

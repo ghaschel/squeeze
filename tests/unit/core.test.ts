@@ -9,8 +9,10 @@ import {
   buildZopfliPngArgs,
   canUseBmpRle,
   hasMatchingIcoDimensions,
+  hasMatchingIconContainerEntries,
   isValidBmpRleRewrite,
   parseBmpHeader,
+  parseIconContainerEntries,
 } from "../../src/utils/optimizer";
 import { resolveCompressOptions } from "../../src/utils/options";
 
@@ -99,6 +101,21 @@ describe("dependency planning", () => {
         {
           absolutePath: "/tmp/sample.ico",
           displayPath: "sample.ico",
+        },
+      ],
+      options
+    );
+
+    expect(dependencies.map((entry) => entry.binary)).toEqual(["file"]);
+  });
+
+  test("does not require exiftool for cur exif-only mode", () => {
+    const options = resolveCompressOptions([], { exif: true }, process.cwd());
+    const dependencies = collectRequiredDependencies(
+      [
+        {
+          absolutePath: "/tmp/sample.cur",
+          displayPath: "sample.cur",
         },
       ],
       options
@@ -372,6 +389,33 @@ describe("ico safety", () => {
           { index: 1, width: 16, height: 16 },
           { index: 2, width: 24, height: 24 },
         ]
+      )
+    ).toBe(false);
+  });
+
+  test("parses cursor hotspots from icon container listings", () => {
+    expect(
+      parseIconContainerEntries(
+        "--index=1 --width=32 --height=32 --bit-depth=32 --hotspot-x=4 --hotspot-y=7"
+      )
+    ).toEqual([
+      {
+        index: 1,
+        width: 32,
+        height: 32,
+        bitDepth: 32,
+        hotspotX: 4,
+        hotspotY: 7,
+      },
+    ]);
+  });
+
+  test("requires rebuilt cursors to preserve entry dimensions and hotspots", () => {
+    expect(
+      hasMatchingIconContainerEntries(
+        [{ index: 1, width: 32, height: 32, hotspotX: 4, hotspotY: 7 }],
+        [{ index: 1, width: 32, height: 32, hotspotX: 4, hotspotY: 8 }],
+        "cur"
       )
     ).toBe(false);
   });

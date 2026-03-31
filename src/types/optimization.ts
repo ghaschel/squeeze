@@ -11,6 +11,7 @@ export type SupportedFormat =
   | "bmp"
   | "jxl"
   | "ico"
+  | "cur"
   | "raw";
 
 export interface ResolvedInput {

@@ -9,7 +9,10 @@ import {
   createEsbuildOptimizationOptions,
   squeezitEsbuild,
 } from "../../src/integrations/esbuild";
-import { representativeFixtures } from "../helpers/fixture-manifest";
+import {
+  hasRepresentativeFixture,
+  representativeFixtures,
+} from "../helpers/fixture-manifest";
 import { cleanupWorkspace, createTempWorkspace } from "../helpers/temp";
 
 const workspaces: string[] = [];
@@ -24,11 +27,12 @@ const esbuildFixtureKeys = [
   "avif",
   "bmp",
   "ico",
+  "cur",
   "jxl",
 ] as const;
 const rawFixtureKeys = ["arw", "cr2", "nef", "orf", "raf"] as const;
 const esbuildAssetPattern =
-  "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,jxl}";
+  "**/*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}";
 
 afterEach(async () => {
   while (workspaces.length > 0) {
@@ -54,7 +58,9 @@ describe("esbuild integration", () => {
   test("uses the explicit web-allowed fixture set and excludes raw fixtures", () => {
     const fixtures = getEsbuildFixtures();
 
-    expect(fixtures.map((fixture) => fixture.key)).toEqual(esbuildFixtureKeys);
+    expect(fixtures.map((fixture) => fixture.key)).toEqual(
+      esbuildFixtureKeys.filter((key) => hasRepresentativeFixture(key))
+    );
     expect(
       fixtures.some((fixture) =>
         rawFixtureKeys.includes(fixture.key as (typeof rawFixtureKeys)[number])
@@ -166,6 +172,7 @@ async function buildProject(
       ".avif": "file",
       ".bmp": "file",
       ".ico": "file",
+      ".cur": "file",
       ".jxl": "file",
     },
     plugins,
@@ -195,19 +202,21 @@ async function totalAssetSize(paths: string[]): Promise<number> {
 }
 
 function getEsbuildFixtures(): Array<{
-  key: (typeof esbuildFixtureKeys)[number];
+  key: string;
   sourcePath: string;
   fileName: string;
 }> {
-  return esbuildFixtureKeys.map((key) => {
-    const sourcePath = representativeFixtures[key];
+  return esbuildFixtureKeys
+    .filter((key) => hasRepresentativeFixture(key))
+    .map((key) => {
+      const sourcePath = representativeFixtures[key];
 
-    return {
-      key,
-      sourcePath,
-      fileName: `${key}${extname(sourcePath)}`,
-    };
-  });
+      return {
+        key,
+        sourcePath,
+        fileName: `${key}${extname(sourcePath)}`,
+      };
+    });
 }
 
 function buildEntrySource(

@@ -19,6 +19,7 @@ const supportedExtensions = new Set([
   ".bmp",
   ".jxl",
   ".ico",
+  ".cur",
   ".arw",
   ".cr2",
   ".nef",
