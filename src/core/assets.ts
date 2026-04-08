@@ -1,3 +1,14 @@
+import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { basename, join } from "node:path";
+
+import type {
+  CoreOptimizationOptions,
+  OptimizationResult,
+  ResolvedInput,
+} from "../types";
+import { optimizeImages } from "../utils/optimizer";
+
 export interface BufferAsset {
   kind: "buffer";
   fileName: string;
@@ -11,6 +22,12 @@ export interface FileAsset {
 }
 
 export type OptimizationAsset = BufferAsset | FileAsset;
+
+export interface OptimizedAssetResult {
+  fileName: string;
+  contents: Buffer;
+  result: OptimizationResult;
+}
 
 export function createBufferAsset(
   fileName: string,
@@ -32,4 +49,47 @@ export function createFileAsset(
     fileName,
     filePath,
   };
+}
+
+export async function optimizeAsset(
+  asset: OptimizationAsset,
+  options: CoreOptimizationOptions
+): Promise<OptimizedAssetResult> {
+  const workspace = await mkdtemp(join(tmpdir(), "squeezit-asset-"));
+  const inputPath = join(workspace, asset.fileName);
+
+  try {
+    if (asset.kind === "buffer") {
+      await writeFile(inputPath, asset.contents);
+    } else {
+      await cp(asset.filePath, inputPath);
+    }
+
+    let optimizationResult: OptimizationResult | undefined;
+    const resolvedInput: ResolvedInput = {
+      absolutePath: inputPath,
+      displayPath: asset.fileName,
+    };
+
+    await optimizeImages([resolvedInput], options, (result) => {
+      optimizationResult = result;
+    });
+
+    if (!optimizationResult) {
+      throw new Error("No optimization result was produced for asset");
+    }
+
+    const finalPath =
+      optimizationResult.status === "optimized"
+        ? (optimizationResult.targetPath ?? inputPath)
+        : inputPath;
+
+    return {
+      fileName: basename(finalPath),
+      contents: await readFile(finalPath),
+      result: optimizationResult,
+    };
+  } finally {
+    await rm(workspace, { recursive: true, force: true });
+  }
 }

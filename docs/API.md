@@ -28,6 +28,7 @@ import { squeezitBabel } from "squeezit/babel";
 import { squeezitEsbuild } from "squeezit/esbuild";
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
+import { squeezitRollup } from "squeezit/rollup";
 import { withSqueezit } from "squeezit/next";
 ```
 
@@ -260,6 +261,23 @@ module.exports = {
 ```
 
 The Webpack plugin runs after assets are emitted to `output.path`, optimizes the written image files from that directory, uses the default compression strategy, and always enables metadata stripping.
+
+### Rollup
+
+```ts
+import { squeezitRollup } from "squeezit/rollup";
+
+export default {
+  input: "src/index.js",
+  output: {
+    dir: "dist",
+    format: "esm",
+  },
+  plugins: [squeezitRollup()],
+};
+```
+
+The Rollup integration targets emitted image assets, not JavaScript chunks. It uses the default compression strategy, always enables metadata stripping, optimizes Rollup asset outputs in memory when possible, and uses a written-output pass for emitted image files not already handled safely in memory.
 
 ### Next.js
 

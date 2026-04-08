@@ -114,15 +114,12 @@ Available today:
 - Grunt plugin via `const { registerSqueezitTask } = require("squeezit/grunt")`
 - Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
+- Rollup plugin via `import { squeezitRollup } from "squeezit/rollup"`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 - esbuild plugin via `import { squeezitEsbuild } from "squeezit/esbuild"`
 - Babel plugin via `import { squeezitBabel } from "squeezit/babel"`
 
-Planned package subpaths:
-
-- `squeezit/rollup`
-
-The subpath exports are reserved now so future wrappers can ship without forcing a package split. For now, the supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
+The supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Rollup plugin, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
 
 ### Gulp
 
@@ -186,6 +183,24 @@ module.exports = {
 ```
 
 The Webpack plugin runs after assets are written to the configured output directory, optimizes emitted image files from that directory, uses the default compression strategy, and always enables metadata stripping. It does not expose or use `max` mode.
+
+### Rollup
+
+```ts
+import { defineConfig } from "rollup";
+import { squeezitRollup } from "squeezit/rollup";
+
+export default defineConfig({
+  input: "src/index.js",
+  output: {
+    dir: "dist",
+    format: "esm",
+  },
+  plugins: [squeezitRollup()],
+});
+```
+
+The Rollup plugin optimizes emitted image assets with the default compression strategy and always enables metadata stripping. It prefers in-memory asset optimization during bundle generation, including hash-safe filename/reference updates when asset bytes change, and uses a post-write output pass as a fallback for emitted files not already handled in memory. It does not expose or use `max` mode.
 
 ### Next.js
 

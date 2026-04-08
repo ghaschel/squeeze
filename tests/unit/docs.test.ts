@@ -9,6 +9,7 @@ import { squeezitEsbuild } from "../../src/integrations/esbuild";
 import { registerSqueezitTask } from "../../src/integrations/grunt";
 import { squeezitGulp } from "../../src/integrations/gulp";
 import { withSqueezit } from "../../src/integrations/next";
+import { squeezitRollup } from "../../src/integrations/rollup";
 import { squeezitVite } from "../../src/integrations/vite";
 import { squeezitWebpack } from "../../src/integrations/webpack";
 
@@ -20,6 +21,7 @@ describe("documentation coverage", () => {
     expect(readme).toContain("squeezit/gulp");
     expect(readme).toContain("squeezit/vite");
     expect(readme).toContain("squeezit/webpack");
+    expect(readme).toContain("squeezit/rollup");
     expect(readme).toContain("squeezit/next");
     expect(readme).toContain("squeezit/esbuild");
     expect(readme).toContain("squeezit/babel");
@@ -50,6 +52,10 @@ describe("documentation coverage", () => {
 
   test("exports the webpack integration", () => {
     expect(typeof squeezitWebpack).toBe("function");
+  });
+
+  test("exports the rollup integration", () => {
+    expect(typeof squeezitRollup).toBe("function");
   });
 
   test("exports the next integration", () => {
