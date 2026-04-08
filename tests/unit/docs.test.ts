@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, test } from "vitest";
 
 import * as api from "../../src/api";
+import { squeezitAstro } from "../../src/integrations/astro";
 import { squeezitBabel } from "../../src/integrations/babel";
 import { squeezitEsbuild } from "../../src/integrations/esbuild";
 import { registerSqueezitTask } from "../../src/integrations/grunt";
@@ -24,6 +25,7 @@ describe("documentation coverage", () => {
     expect(readme).toContain("squeezit/webpack");
     expect(readme).toContain("squeezit/rollup");
     expect(readme).toContain("squeezit/parcel");
+    expect(readme).toContain("squeezit/astro");
     expect(readme).toContain("squeezit/next");
     expect(readme).toContain("squeezit/esbuild");
     expect(readme).toContain("squeezit/babel");
@@ -64,6 +66,10 @@ describe("documentation coverage", () => {
     expect(typeof squeezitParcel).toBe("object");
   });
 
+  test("exports the astro integration", () => {
+    expect(typeof squeezitAstro).toBe("function");
+  });
+
   test("exports the next integration", () => {
     expect(typeof withSqueezit).toBe("function");
   });
@@ -96,6 +102,7 @@ describe("documentation coverage", () => {
     expect(packageJson.exports).toHaveProperty("./webpack");
     expect(packageJson.exports).toHaveProperty("./rollup");
     expect(packageJson.exports).toHaveProperty("./parcel");
+    expect(packageJson.exports).toHaveProperty("./astro");
     expect(packageJson.exports).toHaveProperty("./next");
     expect(packageJson.exports).toHaveProperty("./esbuild");
     expect(packageJson.exports).toHaveProperty("./babel");

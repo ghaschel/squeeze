@@ -32,6 +32,7 @@
     "webpack-plugin",
     "rollup-plugin",
     "parcel-plugin",
+    "astro-integration",
     "esbuild-plugin",
     "gulp-plugin",
     "grunt-plugin",
@@ -112,6 +113,16 @@
         "default": "./dist/parcel.cjs"
       }
     },
+    "./astro": {
+      "import": {
+        "types": "./dist/astro.d.ts",
+        "default": "./dist/astro.js"
+      },
+      "require": {
+        "types": "./dist/astro.d.cts",
+        "default": "./dist/astro.cjs"
+      }
+    },
     "./vite": {
       "import": {
         "types": "./dist/vite.d.ts",
@@ -176,6 +187,7 @@
     "test:esbuild": "vitest run tests/integration/esbuild.test.ts",
     "test:rollup": "vitest run tests/integration/rollup.test.ts",
     "test:parcel": "bun run build && vitest run tests/integration/parcel.test.ts",
+    "test:astro": "bun run build && vitest run tests/integration/astro.test.ts",
     "test:vite": "vitest run tests/integration/vite.test.ts",
     "test:webpack": "vitest run tests/integration/webpack.test.ts",
     "test:next": "bun run build && vitest run tests/integration/next.test.ts",
@@ -193,6 +205,7 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@babel/core": "^7.0.0",
+    "astro": "^5.18.0",
     "@parcel/core": "^2.16.0",
     "@parcel/plugin": "^2.16.0",
     "@eslint/js": "^10.0.1",
@@ -237,6 +250,7 @@
     "gulp": "^5.0.1",
     "grunt": "^1.6.1",
     "next": "^16.2.1",
+    "astro": "^5.18.0",
     "parcel": "^2.16.0",
     "rollup": "^4.52.3",
     "typescript": "^5",
@@ -257,6 +271,9 @@
       "optional": true
     },
     "next": {
+      "optional": true
+    },
+    "astro": {
       "optional": true
     },
     "parcel": {

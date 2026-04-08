@@ -116,11 +116,12 @@ Available today:
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
 - Rollup plugin via `import { squeezitRollup } from "squeezit/rollup"`
 - Parcel optimizer plugin with implementation exported at `squeezit/parcel`
+- Astro wrapper via `import { squeezitAstro } from "squeezit/astro"`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 - esbuild plugin via `import { squeezitEsbuild } from "squeezit/esbuild"`
 - Babel plugin via `import { squeezitBabel } from "squeezit/babel"`
 
-The supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Rollup plugin, the Parcel optimizer plugin, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
+The supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Rollup plugin, the Parcel optimizer plugin, the Astro wrapper, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
 
 ### Gulp
 
@@ -239,6 +240,20 @@ The Rollup plugin optimizes emitted image assets with the default compression st
 ```
 
 The Parcel integration is a real Parcel optimizer plugin. It runs in Parcel's asset pipeline, uses the default compression strategy, always enables metadata stripping, and is production-only by default. Its small config surface is read from `package.json` under `squeezit.parcel`, and it does not expose or use `max` mode.
+
+### Astro
+
+```ts
+import { defineConfig } from "astro/config";
+import { squeezitAstro } from "squeezit/astro";
+
+export default defineConfig({
+  output: "static",
+  integrations: [squeezitAstro()],
+});
+```
+
+The Astro wrapper is a thin integration over `squeezit/vite`. It only matters for `astro build`, targets static Astro output in v1, uses the default compression strategy, and always enables metadata stripping. SSR and hybrid Astro output are not supported by this wrapper yet, and it does not expose or use `max` mode.
 
 ### Next.js
 

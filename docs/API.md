@@ -25,6 +25,7 @@ Integration entrypoints:
 import { squeezitGulp } from "squeezit/gulp";
 import { registerSqueezitTask } from "squeezit/grunt";
 import { squeezitBabel } from "squeezit/babel";
+import { squeezitAstro } from "squeezit/astro";
 import { squeezitEsbuild } from "squeezit/esbuild";
 import squeezitParcel from "squeezit/parcel";
 import { squeezitVite } from "squeezit/vite";
@@ -316,6 +317,20 @@ The Rollup integration targets emitted image assets, not JavaScript chunks. It u
 ```
 
 The Parcel integration is a real Parcel optimizer plugin rather than a JS factory wrapper. It runs in Parcel's optimizer pipeline, targets emitted image assets only, uses the default compression strategy, always enables metadata stripping, and reads its tiny config surface from `package.json` under `squeezit.parcel`.
+
+### Astro
+
+```ts
+import { defineConfig } from "astro/config";
+import { squeezitAstro } from "squeezit/astro";
+
+export default defineConfig({
+  output: "static",
+  integrations: [squeezitAstro()],
+});
+```
+
+The Astro wrapper is a thin integration over the Vite plugin rather than a separate optimizer engine. It only affects `astro build`, supports static Astro output in v1, uses the default compression strategy, and always enables metadata stripping. SSR and hybrid Astro output are currently unsupported.
 
 ### Next.js
 

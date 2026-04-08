@@ -8,6 +8,7 @@ export default defineConfig({
     webpack: "src/integrations/webpack.ts",
     rollup: "src/integrations/rollup.ts",
     parcel: "src/integrations/parcel.ts",
+    astro: "src/integrations/astro.ts",
     vite: "src/integrations/vite.ts",
     next: "src/integrations/next.ts",
     esbuild: "src/integrations/esbuild.ts",
