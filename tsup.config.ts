@@ -7,6 +7,7 @@ export default defineConfig({
     grunt: "src/integrations/grunt.ts",
     webpack: "src/integrations/webpack.ts",
     rollup: "src/integrations/rollup.ts",
+    parcel: "src/integrations/parcel.ts",
     vite: "src/integrations/vite.ts",
     next: "src/integrations/next.ts",
     esbuild: "src/integrations/esbuild.ts",

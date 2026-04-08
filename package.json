@@ -11,6 +11,9 @@
     "type": "git",
     "url": "https://github.com/ghaschel/squeeze.git"
   },
+  "engines": {
+    "parcel": "^2.16.0"
+  },
   "keywords": [
     "squeezit",
     "image",
@@ -28,6 +31,7 @@
     "vite-plugin",
     "webpack-plugin",
     "rollup-plugin",
+    "parcel-plugin",
     "esbuild-plugin",
     "gulp-plugin",
     "grunt-plugin",
@@ -98,6 +102,16 @@
         "default": "./dist/rollup.cjs"
       }
     },
+    "./parcel": {
+      "import": {
+        "types": "./dist/parcel.d.ts",
+        "default": "./dist/parcel.js"
+      },
+      "require": {
+        "types": "./dist/parcel.d.cts",
+        "default": "./dist/parcel.cjs"
+      }
+    },
     "./vite": {
       "import": {
         "types": "./dist/vite.d.ts",
@@ -161,6 +175,7 @@
     "test:grunt": "bun run build && vitest run tests/integration/grunt.test.ts",
     "test:esbuild": "vitest run tests/integration/esbuild.test.ts",
     "test:rollup": "vitest run tests/integration/rollup.test.ts",
+    "test:parcel": "bun run build && vitest run tests/integration/parcel.test.ts",
     "test:vite": "vitest run tests/integration/vite.test.ts",
     "test:webpack": "vitest run tests/integration/webpack.test.ts",
     "test:next": "bun run build && vitest run tests/integration/next.test.ts",
@@ -178,6 +193,8 @@
     "@commitlint/cli": "^20.5.0",
     "@commitlint/config-conventional": "^20.5.0",
     "@babel/core": "^7.0.0",
+    "@parcel/core": "^2.16.0",
+    "@parcel/plugin": "^2.16.0",
     "@eslint/js": "^10.0.1",
     "@types/babel__core": "^7.20.5",
     "@types/gulp": "^4.0.17",
@@ -198,6 +215,7 @@
     "grunt": "^1.6.1",
     "lint-staged": "^16.4.0",
     "next": "^16.2.1",
+    "parcel": "^2.16.0",
     "prettier": "^3.8.1",
     "publint": "^0.3.15",
     "react": "^19.2.0",
@@ -219,6 +237,7 @@
     "gulp": "^5.0.1",
     "grunt": "^1.6.1",
     "next": "^16.2.1",
+    "parcel": "^2.16.0",
     "rollup": "^4.52.3",
     "typescript": "^5",
     "vite": "^8.0.2",
@@ -238,6 +257,9 @@
       "optional": true
     },
     "next": {
+      "optional": true
+    },
+    "parcel": {
       "optional": true
     },
     "rollup": {

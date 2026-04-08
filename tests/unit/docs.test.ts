@@ -9,6 +9,7 @@ import { squeezitEsbuild } from "../../src/integrations/esbuild";
 import { registerSqueezitTask } from "../../src/integrations/grunt";
 import { squeezitGulp } from "../../src/integrations/gulp";
 import { withSqueezit } from "../../src/integrations/next";
+import { squeezitParcel } from "../../src/integrations/parcel";
 import { squeezitRollup } from "../../src/integrations/rollup";
 import { squeezitVite } from "../../src/integrations/vite";
 import { squeezitWebpack } from "../../src/integrations/webpack";
@@ -22,6 +23,7 @@ describe("documentation coverage", () => {
     expect(readme).toContain("squeezit/vite");
     expect(readme).toContain("squeezit/webpack");
     expect(readme).toContain("squeezit/rollup");
+    expect(readme).toContain("squeezit/parcel");
     expect(readme).toContain("squeezit/next");
     expect(readme).toContain("squeezit/esbuild");
     expect(readme).toContain("squeezit/babel");
@@ -58,6 +60,10 @@ describe("documentation coverage", () => {
     expect(typeof squeezitRollup).toBe("function");
   });
 
+  test("exports the parcel integration", () => {
+    expect(typeof squeezitParcel).toBe("object");
+  });
+
   test("exports the next integration", () => {
     expect(typeof withSqueezit).toBe("function");
   });
@@ -89,6 +95,7 @@ describe("documentation coverage", () => {
     expect(packageJson.exports).toHaveProperty("./vite");
     expect(packageJson.exports).toHaveProperty("./webpack");
     expect(packageJson.exports).toHaveProperty("./rollup");
+    expect(packageJson.exports).toHaveProperty("./parcel");
     expect(packageJson.exports).toHaveProperty("./next");
     expect(packageJson.exports).toHaveProperty("./esbuild");
     expect(packageJson.exports).toHaveProperty("./babel");

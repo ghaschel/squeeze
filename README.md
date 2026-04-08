@@ -115,11 +115,12 @@ Available today:
 - Vite plugin via `import { squeezitVite } from "squeezit/vite"`
 - Webpack plugin via `import { squeezitWebpack } from "squeezit/webpack"`
 - Rollup plugin via `import { squeezitRollup } from "squeezit/rollup"`
+- Parcel optimizer plugin with implementation exported at `squeezit/parcel`
 - Next.js wrapper via `import { withSqueezit } from "squeezit/next"`
 - esbuild plugin via `import { squeezitEsbuild } from "squeezit/esbuild"`
 - Babel plugin via `import { squeezitBabel } from "squeezit/babel"`
 
-The supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Rollup plugin, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
+The supported programmatic integration surfaces are the root JS/TS API, the Gulp plugin, the Grunt plugin, the Vite plugin, the Webpack plugin, the Rollup plugin, the Parcel optimizer plugin, the Next.js wrapper, the esbuild plugin, and the Babel plugin.
 
 ### Gulp
 
@@ -201,6 +202,43 @@ export default defineConfig({
 ```
 
 The Rollup plugin optimizes emitted image assets with the default compression strategy and always enables metadata stripping. It prefers in-memory asset optimization during bundle generation, including hash-safe filename/reference updates when asset bytes change, and uses a post-write output pass as a fallback for emitted files not already handled in memory. It does not expose or use `max` mode.
+
+### Parcel
+
+`squeezit/parcel` exports the Parcel optimizer implementation, but Parcel itself only accepts optimizer specifiers that match its `parcel-optimizer-*` naming convention. When consuming it from the main `squeezit` package, point `.parcelrc` at the built plugin file inside `node_modules`:
+
+`.parcelrc`
+
+```json
+{
+  "extends": "@parcel/config-default",
+  "transformers": {
+    "url:*": ["@parcel/transformer-raw"]
+  },
+  "optimizers": {
+    "*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}": [
+      "...",
+      "./node_modules/squeezit/dist/parcel.cjs"
+    ]
+  }
+}
+```
+
+`package.json`
+
+```json
+{
+  "squeezit": {
+    "parcel": {
+      "enabled": true,
+      "checkDependencies": true,
+      "productionOnly": true
+    }
+  }
+}
+```
+
+The Parcel integration is a real Parcel optimizer plugin. It runs in Parcel's asset pipeline, uses the default compression strategy, always enables metadata stripping, and is production-only by default. Its small config surface is read from `package.json` under `squeezit.parcel`, and it does not expose or use `max` mode.
 
 ### Next.js
 

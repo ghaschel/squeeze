@@ -26,6 +26,7 @@ import { squeezitGulp } from "squeezit/gulp";
 import { registerSqueezitTask } from "squeezit/grunt";
 import { squeezitBabel } from "squeezit/babel";
 import { squeezitEsbuild } from "squeezit/esbuild";
+import squeezitParcel from "squeezit/parcel";
 import { squeezitVite } from "squeezit/vite";
 import { squeezitWebpack } from "squeezit/webpack";
 import { squeezitRollup } from "squeezit/rollup";
@@ -278,6 +279,43 @@ export default {
 ```
 
 The Rollup integration targets emitted image assets, not JavaScript chunks. It uses the default compression strategy, always enables metadata stripping, optimizes Rollup asset outputs in memory when possible, and uses a written-output pass for emitted image files not already handled safely in memory.
+
+### Parcel
+
+`squeezit/parcel` exports the Parcel optimizer implementation, but Parcel itself only accepts optimizer specifiers that follow its `parcel-optimizer-*` naming convention. In practice, `.parcelrc` should point at the built plugin file inside `node_modules`:
+
+`.parcelrc`
+
+```json
+{
+  "extends": "@parcel/config-default",
+  "transformers": {
+    "url:*": ["@parcel/transformer-raw"]
+  },
+  "optimizers": {
+    "*.{png,gif,webp,svg,heif,heic,avif,bmp,ico,cur,jxl}": [
+      "...",
+      "./node_modules/squeezit/dist/parcel.cjs"
+    ]
+  }
+}
+```
+
+`package.json`
+
+```json
+{
+  "squeezit": {
+    "parcel": {
+      "enabled": true,
+      "checkDependencies": true,
+      "productionOnly": true
+    }
+  }
+}
+```
+
+The Parcel integration is a real Parcel optimizer plugin rather than a JS factory wrapper. It runs in Parcel's optimizer pipeline, targets emitted image assets only, uses the default compression strategy, always enables metadata stripping, and reads its tiny config surface from `package.json` under `squeezit.parcel`.
 
 ### Next.js
 
